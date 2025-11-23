@@ -1,0 +1,3861 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteMode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--app-font);
+            background: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+
+        :root {
+            --bg-color: #f5f5f5;
+            --bg-gradient: none;
+            --card-bg: #ffffff;
+            --card-gradient: none;
+            --text-color: #333333;
+            --border-color: #d0d0d0;
+            --primary-color: #4a90e2;
+            --primary-hover: #357abd;
+            --danger-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --tab-active: #4a90e2;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --header-bg: #ffffff;
+            --header-gradient: none;
+            --sidebar-bg: #fafafa;
+            --hover-bg: #f0f0f0;
+
+            --app-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --note-font-size: 14px;
+            --note-line-height: 1.6;
+            --note-font-family: inherit;
+            --grid-columns: 280px;
+            --card-padding: 15px;
+            --border-radius: 6px;
+        }
+
+        body.dark {
+            --bg-color: #1e1e1e;
+            --card-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --border-color: #444444;
+            --primary-color: #5dade2;
+            --primary-hover: #3498db;
+            --tab-active: #5dade2;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --header-bg: #2d2d2d;
+            --sidebar-bg: #252525;
+            --hover-bg: #3a3a3a;
+        }
+
+        body.classic {
+            --bg-color: #e8e8e8;
+            --card-bg: #f9f9f9;
+            --text-color: #000000;
+            --border-color: #999999;
+            --primary-color: #0066cc;
+            --primary-hover: #0052a3;
+            --tab-active: #0066cc;
+            --header-bg: #f9f9f9;
+            --sidebar-bg: #eeeeee;
+            --hover-bg: #dddddd;
+        }
+
+        .header {
+            background: var(--header-bg);
+            background-image: var(--header-gradient);
+            border-bottom: 2px solid var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px var(--shadow);
+            transition: all 0.4s ease;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .icon-svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        body.use-emoji .icon-svg {
+            display: none;
+        }
+
+        body.use-svg .icon-emoji {
+            display: none;
+        }
+
+        .icon-emoji {
+            display: inline-block;
+            font-style: normal;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.danger {
+            background: var(--danger-color);
+        }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
+        button.success {
+            background: var(--success-color);
+        }
+
+        button.success:hover {
+            background: #229954;
+        }
+
+        button.secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        button.secondary:hover {
+            background: var(--hover-bg);
+        }
+
+        button.secondary.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        button.icon-btn {
+            padding: 8px 12px;
+            font-size: 16px;
+        }
+
+        select,
+        input[type="text"],
+        input[type="number"],
+        input[type="color"] {
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .tabs-container {
+            background: var(--card-bg);
+            background-image: var(--card-gradient);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 20px 0;
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            transition: all 0.4s ease;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            cursor: move;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            color: var(--text-color);
+            position: relative;
+        }
+
+        .tab:hover {
+            background: var(--hover-bg);
+            transform: translateY(-2px);
+        }
+
+        .tab.active {
+            background: var(--bg-color);
+            background-image: var(--bg-gradient);
+            border-bottom: 2px solid var(--tab-active);
+            font-weight: 600;
+            transform: translateY(0);
+        }
+
+        .tab.dragging {
+            opacity: 0.5;
+        }
+
+        .tab.drag-over {
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .tab-close {
+            background: none;
+            color: var(--danger-color);
+            padding: 0 5px;
+            font-size: 18px;
+            margin-left: 5px;
+        }
+
+        .add-tab-btn {
+            padding: 10px 15px;
+            background: transparent;
+            color: var(--primary-color);
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+            background: var(--bg-color);
+            background-image: var(--bg-gradient);
+            transition: all 0.4s ease;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-container {
+            position: relative;
+        }
+
+        .filter-panel {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px var(--shadow);
+            padding: 15px;
+            z-index: 100;
+            margin-top: 5px;
+            width: 250px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .filter-panel.active {
+            display: block;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .tag-color-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag-color-filter .color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tag-color-filter .color-dot:hover {
+            transform: scale(1.1);
+        }
+
+        .tag-color-filter .color-dot.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        .filter-tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .filter-tag-chip {
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tag-chip:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .search-box-wrapper {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box-wrapper .icon-svg,
+        .search-box-wrapper .icon-emoji {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .search-box-wrapper.has-text .icon-svg,
+        .search-box-wrapper.has-text .icon-emoji {
+            opacity: 0;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 10px 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--grid-columns), 1fr));
+            gap: 15px;
+            overflow-y: auto;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .notes-grid.list-view {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .note-card {
+            background: var(--card-bg);
+            background-image: var(--card-gradient);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--card-padding);
+            box-shadow: 0 2px 4px var(--shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+            user-select: none;
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        .note-card.drag-active {
+            border: 2px dashed var(--primary-color);
+            opacity: 0.7;
+            transform: scale(0.98);
+            cursor: move;
+            animation: pulse 1s infinite;
+        }
+
+        .note-card.drag-over-note {
+            border-color: var(--success-color);
+            transform: translateY(-5px);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(74, 144, 226, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(74, 144, 226, 0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .note-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px var(--shadow);
+        }
+
+        .note-card:hover .note-actions-icons {
+            opacity: 1;
+        }
+
+
+        .note-actions-icons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .collapse-icon-btn {
+            display: none;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .note-card.expanded .collapse-icon-btn {
+            display: flex;
+        }
+
+        .note-actions-icons button {
+            padding: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .note-actions-icons button .icon-svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .pin-btn.pinned {
+            background: var(--warning-color) !important;
+            opacity: 1 !important;
+        }
+
+        .note-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            word-wrap: break-word;
+            padding-right: 110px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+            cursor: grab;
+            user-select: none;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .note-title:active {
+            cursor: grabbing;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .note-content {
+            flex: 1;
+            color: var(--text-color);
+            opacity: 0.8;
+            font-size: var(--note-font-size);
+            line-height: var(--note-line-height);
+            font-family: var(--note-font-family);
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            position: relative;
+            user-select: text;
+        }
+
+        .note-content ul,
+        .note-content ol {
+            padding-left: 20px;
+            margin-left: 4px;
+        }
+
+        .note-content li {
+            margin-bottom: 4px;
+        }
+
+        .note-content.collapsed {
+            max-height: 150px;
+            overflow: hidden;
+            mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+        }
+
+        .read-more-btn {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--primary-color);
+            font-size: 12px;
+            font-weight: bold;
+            padding: 5px 0;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 0px;
+            position: relative;
+            z-index: 5;
+            display: none;
+        }
+
+        .read-more-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .note-content strong {
+            font-weight: bold;
+        }
+
+        .note-content em {
+            font-style: italic;
+        }
+
+        .note-content u {
+            text-decoration: underline;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .note-content .checkbox-wrapper span {
+            flex: 1;
+            outline: none;
+        }
+
+        .note-content .checkbox-wrapper input[type="checkbox"]:checked+span {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .note-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: auto;
+        }
+
+        .note-tag {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .note-tag:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .note-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .action-icon-btn {
+            padding: 4px !important;
+            width: 24px !important;
+            height: 24px !important;
+            opacity: 0.5;
+        }
+
+        .action-icon-btn:hover {
+            opacity: 1;
+        }
+
+        .footer-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .note-date-label {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .note-date-label span:first-child {
+            font-weight: 600;
+            font-size: 10px;
+            opacity: 0.8;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 8px 32px var(--shadow);
+
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            margin: auto;
+            position: relative;
+            z-index: 1;
+            animation: modalSlideIn 0.3s ease;
+            /* overflow-y: auto; */
+        }
+
+        .modal-content.large {
+            max-width: 800px;
+            height: 85vh;
+            overflow: hidden;
+        }
+
+        .modal-header,
+        .tabs-in-modal,
+        .modal-actions {
+            flex-shrink: 0;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: transparent;
+            color: var(--text-color);
+            font-size: 24px;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .form-group input[type="color"] {
+            height: 40px;
+            cursor: pointer;
+        }
+
+        .editor-wrapper {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: border-color 0.3s ease;
+            position: relative;
+        }
+
+        .copy-content-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            padding: 6px 10px;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.1);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        .copy-content-btn:hover {
+            opacity: 1;
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .editor-wrapper:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .editor-content {
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.6;
+            outline: none;
+        }
+
+        .editor-content ul,
+        .editor-content ol {
+            padding-left: 20px;
+            margin-left: 4px;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            padding: 10px;
+            background: var(--hover-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .editor-toolbar button {
+            padding: 6px 12px;
+            font-size: 13px;
+            min-width: 36px;
+        }
+
+        .editor-toolbar button .icon-svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .editor-toolbar .color-picker-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .editor-toolbar .color-picker-wrapper input[type="color"] {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+        }
+
+        .tags-input-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--bg-color);
+            min-height: 42px;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .tags-input-wrapper:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .tag-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: white;
+            animation: tagAppear 0.3s ease;
+        }
+
+        @keyframes tagAppear {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .tag-item button {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            border: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            padding: 0;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tag-item button:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .tag-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            min-width: 100px;
+            padding: 5px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .tag-color-picker {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .tag-color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tag-color-option:hover {
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .tag-color-option.selected {
+            border-color: var(--text-color);
+            transform: scale(1.2);
+        }
+
+        .add-custom-color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .add-custom-color-btn input[type="color"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .existing-tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .existing-tag-chip {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .existing-tag-chip:hover {
+            opacity: 1;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-color);
+            opacity: 0.6;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        .settings-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 15px;
+        }
+
+        .setting-item label {
+            flex: 1;
+        }
+
+        .setting-item input,
+        .setting-item select {
+            flex: 0 0 200px;
+        }
+
+        .color-picker-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .color-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .color-item label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .gradient-controls {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .gradient-preview {
+            height: 60px;
+            border-radius: var(--border-radius);
+            border: 2px solid var(--border-color);
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .tabs-in-modal {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab-in-modal {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-in-modal:hover {
+            opacity: 0.8;
+        }
+
+        .tab-in-modal.active {
+            opacity: 1;
+            border-bottom-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            flex: 1;
+            /* Растягиваем на всё доступное место */
+            overflow-y: auto;
+            /* Скролл теперь ВНУТРИ вкладки */
+            padding-right: 5px;
+            animation: fadeIn 0.3s ease;
+            /* Красивый скроллбар */
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .custom-theme-item {
+            background: var(--hover-bg);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .custom-theme-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .custom-theme-item .theme-name {
+            font-weight: 500;
+        }
+
+        .custom-theme-item .theme-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .info-box {
+            background: var(--hover-bg);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            margin: 10px 0;
+            font-size: 13px;
+            border-left: 3px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .language-switch {
+            display: flex;
+            gap: 5px;
+            background: var(--hover-bg);
+            padding: 3px;
+            border-radius: var(--border-radius);
+        }
+
+        .language-switch button {
+            padding: 5px 12px;
+            font-size: 13px;
+            background: transparent;
+            color: var(--text-color);
+        }
+
+        .language-switch button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .view-switch {
+            display: flex;
+            gap: 5px;
+        }
+
+        .view-switch button {
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+        }
+
+        .settings-presets {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .preset-btn {
+            flex: 1;
+            max-width: 150px;
+            text-align: center;
+        }
+
+        .dialog-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        .dialog-modal.active {
+            display: flex;
+        }
+
+        .dialog-content {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            animation: modalSlideIn 0.2s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .dialog-header {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        .dialog-message {
+            font-size: 14px;
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+
+        .dialog-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .setting-item input,
+            .setting-item select {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+
+            .color-picker-group {
+                grid-template-columns: 1fr;
+            }
+
+            .note-actions-icons {
+                opacity: 1;
+            }
+
+            .note-card.list-view {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .note-card.list-view .note-title,
+            .note-card.list-view .note-footer {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="use-svg">
+    <div class="header">
+        <h1>NoteMode</h1>
+        <div class="header-controls">
+            <button class="icon-btn" onclick="openSettings()" title="Settings">
+                <span class="icon-emoji">⚙️</span>
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path
+                        d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="tabs-container" id="tabsContainer">
+        <button class="add-tab-btn" onclick="addNewTab()" data-i18n="newTab">+ New Tab</button>
+    </div>
+
+    <div class="main-container">
+        <div class="toolbar">
+            <div class="search-box-wrapper">
+                <span class="icon-emoji">🔍</span>
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                </svg>
+                <input type="text" class="search-box" id="searchBox" placeholder="Search notes or #tag..."
+                    data-i18n-placeholder="searchPlaceholder">
+            </div>
+
+            <div class="filter-container">
+                <button class="secondary" id="filterBtn" onclick="toggleFilterPanel()">
+                    <span class="icon-emoji">📊</span>
+                    <svg class="icon-svg" viewBox="0 0 24 24">
+                        <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" />
+                    </svg>
+                    <span data-i18n="filter">Filter</span>
+                </button>
+                <div class="filter-panel" id="filterPanel">
+                    <div class="filter-group">
+                        <label data-i18n="sortBy">Sort by</label>
+                        <select id="sortOrder" onchange="applyFilters()">
+                            <option value="custom" data-i18n="sortCustom">My Order</option>
+                            <option value="date" data-i18n="sortDate">Date</option>
+                            <option value="alphabet" data-i18n="sortAlphabet">Alphabet (A-Z)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label data-i18n="filterByTagColor">Filter by tag color</label>
+                        <div class="tag-color-filter" id="tagColorFilter">
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label data-i18n="filterByTagName">Filter by tag name</label>
+                        <div class="filter-tags-list" id="filterTagsList">
+                        </div>
+                    </div>
+                    <button class="secondary" onclick="resetFilters()" style="width: 100%;"
+                        data-i18n="resetFilters">Reset</button>
+                </div>
+            </div>
+            <div class="view-switch">
+                <button class="secondary active" id="gridViewBtn" onclick="switchView('grid')" title="Grid View">
+                    <span class="icon-emoji">⊞</span>
+                    <svg class="icon-svg" viewBox="0 0 24 24">
+                        <path
+                            d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z" />
+                    </svg>
+                </button>
+                <button class="secondary" id="listViewBtn" onclick="switchView('list')" title="List View">
+                    <span class="icon-emoji">☰</span>
+                    <svg class="icon-svg" viewBox="0 0 24 24">
+                        <path
+                            d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+                    </svg>
+                </button>
+            </div>
+            <button onclick="openNoteModal()" data-i18n="newNote">+ New Note</button>
+            <button class="secondary" onclick="renameCurrentTab()">
+                <span class="icon-emoji">✏️</span>
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path
+                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                </svg>
+                <span data-i18n="rename">Rename</span>
+            </button>
+            <button class="secondary" onclick="showExportMenu()">
+                <span class="icon-emoji">📥</span>
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path
+                        d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z" />
+                </svg>
+                <span data-i18n="export">Export</span>
+            </button>
+        </div>
+
+        <div class="notes-grid" id="notesGrid">
+            <div class="empty-state">
+                <h2 data-i18n="noNotes">No notes yet</h2>
+                <p data-i18n="createFirst">Create your first note by clicking "New Note"</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="noteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span data-i18n="newNoteTitle">New Note</span>
+                <button class="modal-close" onclick="closeNoteModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label data-i18n="noteTitle">Title</label>
+                <input type="text" id="noteTitle" placeholder="Enter title..." data-i18n-placeholder="titlePlaceholder">
+            </div>
+            <div class="form-group">
+                <label data-i18n="noteTags">Tags</label>
+                <div class="tags-input-wrapper" id="tagsInputWrapper">
+                    <input type="text" class="tag-input" id="tagInput" placeholder="Add tag..."
+                        data-i18n-placeholder="addTag">
+                </div>
+                <div class="tag-color-picker" id="tagColorPicker" style="display:none;">
+                    <div class="tag-color-option" style="background: #e74c3c" data-color="#e74c3c"></div>
+                    <div class="tag-color-option" style="background: #3498db" data-color="#3498db"></div>
+                    <div class="tag-color-option" style="background: #2ecc71" data-color="#2ecc71"></div>
+                    <div class="tag-color-option" style="background: #f39c12" data-color="#f39c12"></div>
+                    <div class="tag-color-option" style="background: #9b59b6" data-color="#9b59b6"></div>
+                    <div class="tag-color-option" style="background: #1abc9c" data-color="#1abc9c"></div>
+                    <div class="tag-color-option" style="background: #34495e" data-color="#34495e"></div>
+                    <div class="tag-color-option" style="background: #e91e63" data-color="#e91e63"></div>
+                    <div class="add-custom-color-btn" title="Add Custom Color">
+                        <span>+</span>
+                        <input type="color" id="addCustomTagColor" onchange="addCustomTagColor(this.value)">
+                    </div>
+                </div>
+                <div class="existing-tags-list" id="existingTagsList">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="noteContent">Content</label>
+                <div class="editor-wrapper">
+                    <button class="copy-content-btn" onclick="copyNoteContent()" title="Copy content">
+                        <span class="icon-emoji">📋</span>
+                        <svg class="icon-svg" viewBox="0 0 24 24" style="width:14px; height:14px;">
+                            <path
+                                d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                        </svg>
+                    </button>
+                    <div class="editor-content" id="noteContent" contenteditable="true"
+                        data-placeholder="Enter note content..."></div>
+                    <div class="editor-toolbar">
+                        <button class="secondary" id="boldBtn" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+                            <span class="icon-emoji">B</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path
+                                    d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z" />
+                            </svg>
+                        </button>
+                        <button class="secondary" id="italicBtn" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+                            <span class="icon-emoji">I</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z" />
+                            </svg>
+                        </button>
+                        <button class="secondary" id="underlineBtn" onclick="formatText('underline')"
+                            title="Underline (Ctrl+U)">
+                            <span class="icon-emoji">U</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path
+                                    d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z" />
+                            </svg>
+                        </button>
+                        <button class="secondary" id="strikeBtn" onclick="formatText('strikeThrough')"
+                            title="Strikethrough">
+                            <span class="icon-emoji">S</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z" />
+                            </svg>
+                        </button>
+                        <button class="secondary" id="olBtn" onclick="formatText('insertOrderedList')"
+                            title="Numbered List">
+                            <span class="icon-emoji">1.</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path
+                                    d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z" />
+                            </svg>
+                        </button>
+                        <button class="secondary" id="ulBtn" onclick="formatText('insertUnorderedList')"
+                            title="Bullet List">
+                            <span class="icon-emoji">•</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path
+                                    d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z" />
+                            </svg>
+                        </button>
+                        <button class="secondary" id="checkboxBtn" onclick="addCheckbox()" title="Add Checkbox">
+                            <span class="icon-emoji">☑</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path
+                                    d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.1-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                            </svg>
+                        </button>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="textColorPicker" title="Text Color" onchange="changeTextColor()">
+                        </div>
+                        <button class="secondary" onclick="clearFormatting()" title="Clear Formatting">
+                            <span class="icon-emoji">✖</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24">
+                                <path
+                                    d="M3.27 5L2 6.27l6.97 6.97L6.5 19h3l1.57-3.66L16.73 21 18 19.73 3.55 5.27 3.27 5zM6 5v.18L8.82 8h2.4l-.72 1.68 2.1 2.1L14.21 8H20V5H6z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeNoteModal()" data-i18n="cancel">Cancel</button>
+                <button onclick="saveNote()" data-i18n="save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="settingsModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <span>
+                    <span class="icon-emoji">⚙️</span>
+                    <svg class="icon-svg" viewBox="0 0 24 24">
+                        <path
+                            d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                    </svg>
+                    <span data-i18n="settings">Settings</span>
+                </span>
+                <button class="modal-close" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="tabs-in-modal">
+                <button class="tab-in-modal active" onclick="switchSettingsTab('general')"
+                    data-i18n="generalTab">General</button>
+                <button class="tab-in-modal" onclick="switchSettingsTab('appearance')"
+                    data-i18n="appearanceTab">Appearance</button>
+                <button class="tab-in-modal" onclick="switchSettingsTab('themes')" data-i18n="themesTab">Themes</button>
+                <button class="tab-in-modal" onclick="switchSettingsTab('export')"
+                    data-i18n="exportTab">Export/Import</button>
+            </div>
+
+            <div class="tab-content active" id="general-tab">
+                <div class="settings-presets">
+                    <button class="secondary preset-btn" onclick="applyPreset('standard')">Standard</button>
+                    <button class="secondary preset-btn" onclick="applyPreset('recommended')">Recommended</button>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="interfaceSection">Interface</h3>
+
+                    <div class="setting-item">
+                        <label data-i18n="language">Language</label>
+                        <div class="language-switch">
+                            <button class="lang-btn" onclick="switchLanguage('ru')" data-lang="ru">RU</button>
+                            <button class="lang-btn active" onclick="switchLanguage('en')" data-lang="en">EN</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <label data-i18n="iconType">Icon Type</label>
+                        <select id="iconType" onchange="updateIconType()">
+                            <option value="svg">SVG Icons</option>
+                            <option value="emoji">Emoji</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="fontsSection">Fonts & Text</h3>
+
+                    <div class="setting-item">
+                        <label data-i18n="noteFont">Note Font</label>
+                        <select id="noteFontFamily" onchange="updateSettings()">
+                            <option value="inherit">Default (Segoe UI)</option>
+                            <option value="'Arial', sans-serif">Arial</option>
+                            <option value="'Times New Roman', serif">Times New Roman</option>
+                            <option value="'Courier New', monospace">Courier New</option>
+                            <option value="'Georgia', serif">Georgia</option>
+                            <option value="'Verdana', sans-serif">Verdana</option>
+                            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label data-i18n="fontSize">Font Size (px)</label>
+                        <input type="number" id="noteFontSize" min="10" max="24" value="14" onchange="updateSettings()">
+                    </div>
+
+                    <div class="setting-item">
+                        <label data-i18n="lineHeight">Line Height</label>
+                        <input type="number" id="noteLineHeight" min="1" max="3" step="0.1" value="1.6"
+                            onchange="updateSettings()">
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="displaySection">Display</h3>
+
+                    <div class="setting-item">
+                        <label data-i18n="cardWidth">Min Card Width (px)</label>
+                        <input type="number" id="gridColumns" min="200" max="500" step="10" value="280"
+                            onchange="updateSettings()">
+                    </div>
+
+                    <div class="setting-item">
+                        <label data-i18n="cardPadding">Card Padding (px)</label>
+                        <input type="number" id="cardPadding" min="5" max="30" step="5" value="15"
+                            onchange="updateSettings()">
+                    </div>
+
+                    <div class="setting-item">
+                        <label data-i18n="borderRadius">Border Radius (px)</label>
+                        <input type="number" id="borderRadius" min="0" max="20" step="2" value="6"
+                            onchange="updateSettings()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="appearance-tab">
+                <div class="settings-section">
+                    <h3 data-i18n="builtInThemes">Built-in Themes</h3>
+
+                    <div class="setting-item">
+                        <label data-i18n="selectTheme">Select Theme</label>
+                        <select id="themeSelector" onchange="changeTheme()">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="classic">Classic</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="themes-tab">
+                <div class="settings-section">
+                    <h3 data-i18n="createTheme">Create Custom Theme</h3>
+
+                    <div class="form-group">
+                        <label data-i18n="themeName">Theme Name</label>
+                        <input type="text" id="customThemeName" placeholder="My Theme">
+                    </div>
+
+                    <div class="color-picker-group">
+                        <div class="color-item">
+                            <label data-i18n="bgColor">Background</label>
+                            <input type="color" id="customBgColor" value="#f5f5f5">
+                        </div>
+                        <div class="color-item">
+                            <label data-i18n="cardBgColor">Card Background</label>
+                            <input type="color" id="customCardBg" value="#ffffff">
+                        </div>
+                        <div class="color-item">
+                            <label data-i18n="textColor">Text Color</label>
+                            <input type="color" id="customTextColor" value="#333333">
+                        </div>
+                        <div class="color-item">
+                            <label data-i18n="borderColor">Border Color</label>
+                            <input type="color" id="customBorderColor" value="#d0d0d0">
+                        </div>
+                        <div class="color-item">
+                            <label data-i18n="primaryColor">Primary Color</label>
+                            <input type="color" id="customPrimaryColor" value="#4a90e2">
+                        </div>
+                        <div class="color-item">
+                            <label data-i18n="headerBgColor">Header Background</label>
+                            <input type="color" id="customHeaderBg" value="#ffffff">
+                        </div>
+                        <div class="color-item">
+                            <label data-i18n="hoverBgColor">Hover Background</label>
+                            <input type="color" id="customHoverBg" value="#f0f0f0">
+                        </div>
+                        <div class="color-item">
+                            <label data-i18n="sidebarBgColor">Sidebar Background</label>
+                            <input type="color" id="customSidebarBg" value="#fafafa">
+                        </div>
+                    </div>
+
+                    <div class="gradient-controls">
+                        <div class="setting-item">
+                            <label data-i18n="enableBgGradient">Background Gradient</label>
+                            <select id="bgGradientType" onchange="updateGradientPreview()">
+                                <option value="none">None</option>
+                                <option value="linear">Linear</option>
+                                <option value="radial">Radial</option>
+                            </select>
+                        </div>
+                        <div id="bgGradientControls" style="display:none;">
+                            <div class="color-item">
+                                <label data-i18n="gradientColor1">Gradient Color 1</label>
+                                <input type="color" id="bgGradient1" value="#f5f5f5" onchange="updateGradientPreview()">
+                            </div>
+                            <div class="color-item">
+                                <label data-i18n="gradientColor2">Gradient Color 2</label>
+                                <input type="color" id="bgGradient2" value="#e0e0e0" onchange="updateGradientPreview()">
+                            </div>
+                            <div class="setting-item" id="gradientAngleControl" style="display:none;">
+                                <label data-i18n="gradientAngle">Gradient Angle (deg)</label>
+                                <input type="number" id="bgGradientAngle" min="0" max="360" value="135"
+                                    onchange="updateGradientPreview()">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label data-i18n="enableCardGradient">Card Gradient</label>
+                            <select id="cardGradientType" onchange="updateGradientPreview()">
+                                <option value="none">None</option>
+                                <option value="linear">Linear</option>
+                                <option value="radial">Radial</option>
+                            </select>
+                        </div>
+                        <div id="cardGradientControls" style="display:none;">
+                            <div class="color-item">
+                                <label data-i18n="gradientColor1">Gradient Color 1</label>
+                                <input type="color" id="cardGradient1" value="#ffffff"
+                                    onchange="updateGradientPreview()">
+                            </div>
+                            <div class="color-item">
+                                <label data-i18n="gradientColor2">Gradient Color 2</label>
+                                <input type="color" id="cardGradient2" value="#f0f0f0"
+                                    onchange="updateGradientPreview()">
+                            </div>
+                            <div class="setting-item" id="cardGradientAngleControl" style="display:none;">
+                                <label data-i18n="gradientAngle">Gradient Angle (deg)</label>
+                                <input type="number" id="cardGradientAngle" min="0" max="360" value="135"
+                                    onchange="updateGradientPreview()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gradient-preview" id="gradientPreview"></div>
+
+                    <div class="modal-actions">
+                        <button class="success" onclick="saveCustomTheme()" data-i18n="saveTheme">Save Theme</button>
+                        <button class="secondary" onclick="exportCustomTheme()" data-i18n="exportTheme">Export
+                            Theme</button>
+                        <button class="secondary" onclick="importCustomTheme()" data-i18n="importTheme">Import
+                            Theme</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="myThemes">My Themes</h3>
+                    <div id="customThemesList"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="export-tab">
+                <div class="settings-section">
+                    <h3 data-i18n="exportDataSection">Export Data</h3>
+
+                    <div class="info-box">
+                        <strong data-i18n="exportTabInfo">Export current tab:</strong> <span
+                            data-i18n="exportTabDesc">Saves only notes from the current tab.</span>
+                    </div>
+                    <button class="success" onclick="exportCurrentTab()" data-i18n="exportCurrentTab">Export Current
+                        Tab</button>
+
+                    <div class="info-box" style="margin-top: 15px;">
+                        <strong data-i18n="exportWorkspaceInfo">Export workspace:</strong> <span
+                            data-i18n="exportWorkspaceDesc">Saves all tabs and notes (WITHOUT settings and
+                            themes).</span>
+                    </div>
+                    <button class="success" onclick="exportAllData()" data-i18n="exportWorkspace">Export
+                        Workspace</button>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="importDataSection">Import Data</h3>
+
+                    <div class="info-box">
+                        <strong data-i18n="importTabInfo">Import tab:</strong> <span data-i18n="importTabDesc">Adds
+                            imported tab to existing ones. Old data is preserved.</span>
+                    </div>
+                    <button class="secondary" onclick="importTab()" data-i18n="importTabBtn">Import Tab</button>
+
+                    <div class="info-box" style="margin-top: 15px;">
+                        <strong data-i18n="importWorkspaceWarning">⚠️ Import workspace:</strong> <span
+                            data-i18n="importWorkspaceDesc">COMPLETELY replaces all tabs and notes! Settings and themes
+                            are preserved.</span>
+                    </div>
+                    <button class="danger" onclick="importAllData()" data-i18n="importWorkspace">Import Workspace
+                        (replace)</button>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="resetSection">Reset Data</h3>
+                    <button class="danger" onclick="resetAllData()" data-i18n="deleteAllData">Delete All Data</button>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="closeSettings()" data-i18n="close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-modal" id="dialogModal">
+        <div class="dialog-content">
+            <div class="dialog-header" id="dialogTitle">Message</div>
+            <div class="dialog-message" id="dialogMessage"></div>
+            <input type="text" class="dialog-input" id="dialogInput" style="display:none;">
+            <div class="dialog-actions">
+                <button class="secondary" id="dialogCancelBtn" onclick="closeDialog(false)">Cancel</button>
+                <button class="success" id="dialogOkBtn" onclick="closeDialog(true)">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let data = {
+            tabs: [],
+            activeTabId: null,
+            theme: 'light',
+            customThemes: [],
+            language: 'en',
+            viewMode: 'grid',
+            customColors: [],
+            settings: {
+                noteFontFamily: 'inherit',
+                noteFontSize: 14,
+                noteLineHeight: 1.6,
+                gridColumns: 280,
+                cardPadding: 15,
+                borderRadius: 6,
+                iconType: 'svg'
+            }
+        };
+
+        let dialogCallback = null;
+
+        function showDialog(type, title, message, defaultValue = '', callback = null) {
+            const modal = document.getElementById('dialogModal');
+            const titleEl = document.getElementById('dialogTitle');
+            const msgEl = document.getElementById('dialogMessage');
+            const inputEl = document.getElementById('dialogInput');
+            const cancelBtn = document.getElementById('dialogCancelBtn');
+            const okBtn = document.getElementById('dialogOkBtn');
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            dialogCallback = callback;
+
+            inputEl.style.display = 'none';
+            inputEl.value = '';
+            cancelBtn.style.display = 'block';
+
+            if (type === 'alert') {
+                cancelBtn.style.display = 'none';
+                okBtn.textContent = 'OK';
+                okBtn.onclick = () => closeDialog(true);
+            } else if (type === 'confirm') {
+                okBtn.textContent = data.language === 'ru' ? 'Да' : 'Yes';
+                cancelBtn.textContent = data.language === 'ru' ? 'Нет' : 'No';
+            } else if (type === 'prompt') {
+                inputEl.style.display = 'block';
+                inputEl.value = defaultValue;
+                okBtn.textContent = 'OK';
+                setTimeout(() => inputEl.focus(), 100);
+
+                inputEl.onkeydown = (e) => {
+                    if (e.key === 'Enter') closeDialog(true);
+                };
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeDialog(result) {
+            const modal = document.getElementById('dialogModal');
+            const inputEl = document.getElementById('dialogInput');
+
+            modal.classList.remove('active');
+
+            if (dialogCallback) {
+                if (result && inputEl.style.display !== 'none') {
+                    dialogCallback(inputEl.value);
+                } else {
+                    dialogCallback(result);
+                }
+            }
+            dialogCallback = null;
+        }
+
+        const translations = {
+            ru: {
+                newTab: '+ Новая вкладка',
+                newNote: '+ Новая заметка',
+                rename: 'Переименовать',
+                export: 'Экспорт/Импорт',
+                filter: 'Фильтр',
+                sortBy: 'Сортировать по',
+                sortDate: 'Дате',
+                sortAlphabet: 'Алфавиту (А-Я)',
+                sortCustom: 'Свой порядок',
+                filterByTagColor: 'Фильтр по цвету тега',
+                filterByTagName: 'Фильтр по названию тега',
+                resetFilters: 'Сбросить',
+                noNotes: 'Заметок пока нет',
+                createFirst: 'Создайте первую заметку',
+                newNoteTitle: 'Новая заметка',
+                noteTitle: 'Заголовок',
+                noteTags: 'Теги',
+                addTag: 'Добавить тег...',
+                noteContent: 'Содержимое',
+                cancel: 'Отмена',
+                save: 'Сохранить',
+                settings: 'Настройки',
+                generalTab: 'Основные',
+                appearanceTab: 'Оформление',
+                themesTab: 'Темы',
+                exportTab: 'Экспорт/Импорт',
+                interfaceSection: 'Интерфейс',
+                language: 'Язык',
+                iconType: 'Тип иконок',
+                fontsSection: 'Шрифты и текст',
+                noteFont: 'Шрифт заметок',
+                fontSize: 'Размер шрифта (px)',
+                lineHeight: 'Межстрочный интервал',
+                displaySection: 'Отображение',
+                cardWidth: 'Мин. ширина карточки (px)',
+                cardPadding: 'Отступ карточки (px)',
+                borderRadius: 'Радиус границ (px)',
+                builtInThemes: 'Встроенные темы',
+                selectTheme: 'Выберите тему',
+                createTheme: 'Создать свою тему',
+                themeName: 'Название темы',
+                bgColor: 'Фон',
+                cardBgColor: 'Фон карточек',
+                textColor: 'Цвет текста',
+                borderColor: 'Цвет границ',
+                primaryColor: 'Основной цвет',
+                headerBgColor: 'Фон заголовка',
+                hoverBgColor: 'Фон при наведении',
+                sidebarBgColor: 'Боковая панель',
+                enableBgGradient: 'Градиент фона',
+                enableCardGradient: 'Градиент карточек',
+                gradientColor1: 'Цвет градиента 1',
+                gradientColor2: 'Цвет градиента 2',
+                gradientAngle: 'Угол градиента (град)',
+                saveTheme: 'Сохранить тему',
+                exportTheme: 'Экспортировать тему',
+                importTheme: 'Импортировать тему',
+                myThemes: 'Мои темы',
+                exportDataSection: 'Экспорт данных',
+                exportTabInfo: 'Экспорт текущей вкладки:',
+                exportTabDesc: 'Сохраняет только заметки из текущей вкладки.',
+                exportCurrentTab: 'Экспортировать текущую вкладку',
+                exportWorkspaceInfo: 'Экспорт рабочего пространства:',
+                exportWorkspaceDesc: 'Сохраняет все вкладки и заметки.',
+                exportWorkspace: 'Экспортировать рабочее пространство',
+                importDataSection: 'Импорт данных',
+                importTabInfo: 'Импорт вкладки:',
+                importTabDesc: 'Добавляет вкладку к существующим.',
+                importTabBtn: 'Импортировать вкладку',
+                importWorkspaceWarning: '⚠️ Импорт рабочего пространства:',
+                importWorkspaceDesc: 'Заменяет все вкладки и заметки!',
+                importWorkspace: 'Импортировать рабочее пространство',
+                resetSection: 'Сброс данных',
+                deleteAllData: 'Удалить все данные',
+                close: 'Закрыть',
+                searchPlaceholder: '      Поиск или #тег...',
+                titlePlaceholder: 'Введите заголовок...',
+                created: 'Создано',
+                updated: 'Изменено',
+                more: 'Ещё...',
+                collapse: 'Свернуть'
+            },
+            en: {
+                newTab: '+ New Tab',
+                newNote: '+ New Note',
+                rename: 'Rename',
+                export: 'Export',
+                filter: 'Filter',
+                sortBy: 'Sort by',
+                sortDate: 'Date',
+                sortAlphabet: 'Alphabet (A-Z)',
+                sortCustom: 'My Order',
+                filterByTagColor: 'Filter by tag color',
+                filterByTagName: 'Filter by tag name',
+                resetFilters: 'Reset',
+                noNotes: 'No notes yet',
+                createFirst: 'Create your first note',
+                newNoteTitle: 'New Note',
+                noteTitle: 'Title',
+                noteTags: 'Tags',
+                addTag: 'Add tag...',
+                noteContent: 'Content',
+                cancel: 'Cancel',
+                save: 'Save',
+                settings: 'Settings',
+                generalTab: 'General',
+                appearanceTab: 'Appearance',
+                themesTab: 'Themes',
+                exportTab: 'Export/Import',
+                interfaceSection: 'Interface',
+                language: 'Language',
+                iconType: 'Icon Type',
+                fontsSection: 'Fonts & Text',
+                noteFont: 'Note Font',
+                fontSize: 'Font Size (px)',
+                lineHeight: 'Line Height',
+                displaySection: 'Display',
+                cardWidth: 'Min Card Width (px)',
+                cardPadding: 'Card Padding (px)',
+                borderRadius: 'Border Radius (px)',
+                builtInThemes: 'Built-in Themes',
+                selectTheme: 'Select Theme',
+                createTheme: 'Create Custom Theme',
+                themeName: 'Theme Name',
+                bgColor: 'Background',
+                cardBgColor: 'Card Background',
+                textColor: 'Text Color',
+                borderColor: 'Border Color',
+                primaryColor: 'Primary Color',
+                headerBgColor: 'Header Background',
+                hoverBgColor: 'Hover Background',
+                sidebarBgColor: 'Sidebar Background',
+                enableBgGradient: 'Background Gradient',
+                enableCardGradient: 'Card Gradient',
+                gradientColor1: 'Gradient Color 1',
+                gradientColor2: 'Gradient Color 2',
+                gradientAngle: 'Gradient Angle (deg)',
+                saveTheme: 'Save Theme',
+                exportTheme: 'Export Theme',
+                importTheme: 'Import Theme',
+                myThemes: 'My Themes',
+                exportDataSection: 'Export Data',
+                exportTabInfo: 'Export current tab:',
+                exportTabDesc: 'Saves only notes from current tab.',
+                exportCurrentTab: 'Export Current Tab',
+                exportWorkspaceInfo: 'Export workspace:',
+                exportWorkspaceDesc: 'Saves all tabs and notes.',
+                exportWorkspace: 'Export Workspace',
+                importDataSection: 'Import Data',
+                importTabInfo: 'Import tab:',
+                importTabDesc: 'Adds tab to existing ones.',
+                importTabBtn: 'Import Tab',
+                importWorkspaceWarning: '⚠️ Import workspace:',
+                importWorkspaceDesc: 'Replaces all tabs and notes!',
+                importWorkspace: 'Import Workspace',
+                resetSection: 'Reset Data',
+                deleteAllData: 'Delete All Data',
+                close: 'Close',
+                searchPlaceholder: '      Search or #tag...',
+                titlePlaceholder: 'Enter title...',
+                created: 'Created',
+                updated: 'Updated',
+                more: 'More...',
+                collapse: 'Collapse'
+            }
+        };
+
+        let editingNoteId = null;
+        let activeSettingsTab = 'general';
+        let draggedTab = null;
+        let currentNoteTags = [];
+        let selectedTagColor = '#3498db';
+        let pendingTagName = '';
+
+        function init() {
+            loadData();
+            if (data.tabs.length === 0) {
+                createTab(data.language === 'ru' ? 'Общее' : 'General');
+            }
+            applyTheme();
+            applySettings();
+            applyLanguage();
+            applyViewMode();
+            renderTabs();
+            renderNotes();
+            renderCustomThemes();
+            updateGradientControls();
+
+            document.getElementById('searchBox').addEventListener('input', renderNotes);
+
+            const searchBox = document.getElementById('searchBox');
+            searchBox.addEventListener('input', renderNotes);
+            searchBox.addEventListener('input', () => {
+                if (searchBox.value.trim()) {
+                    searchBox.parentElement.classList.add('has-text');
+                } else {
+                    searchBox.parentElement.classList.remove('has-text');
+                }
+            });
+
+            const tagInput = document.getElementById('tagInput');
+            tagInput.addEventListener('keydown', handleTagInput);
+            tagInput.addEventListener('focus', showTagColorPicker);
+
+            document.querySelectorAll('.tag-color-option').forEach(option => {
+                option.addEventListener('click', function () {
+                    selectedTagColor = this.getAttribute('data-color');
+                    document.querySelectorAll('.tag-color-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    if (pendingTagName) {
+                        addTag(pendingTagName, selectedTagColor);
+                        pendingTagName = '';
+                        tagInput.value = '';
+                        hideTagColorPicker();
+                    }
+                });
+            });
+
+            document.getElementById('noteContent').addEventListener('paste', function (e) {
+                e.preventDefault();
+                var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+
+            document.getElementById('noteContent').addEventListener('mouseup', updateFormattingButtons);
+            document.getElementById('noteContent').addEventListener('keyup', updateFormattingButtons);
+
+            document.addEventListener('click', function (event) {
+                const filterPanel = document.getElementById('filterPanel');
+                const filterBtn = document.getElementById('filterBtn');
+                if (!filterPanel.contains(event.target) && !filterBtn.contains(event.target)) {
+                    filterPanel.classList.remove('active');
+                }
+            });
+        }
+
+        function duplicateNote(noteId) {
+            const tab = getCurrentTab();
+            if (!tab) return;
+
+            const originalNote = tab.notes.find(n => n.id === noteId);
+            if (!originalNote) return;
+
+            const newNote = JSON.parse(JSON.stringify(originalNote));
+            newNote.id = Date.now().toString() + Math.random();
+            newNote.created = new Date().toISOString();
+            newNote.updated = new Date().toISOString();
+
+            const index = tab.notes.findIndex(n => n.id === noteId);
+            tab.notes.splice(index + 1, 0, newNote);
+
+            saveData();
+            renderNotes();
+        }
+
+        function toggleNoteExpansion(noteId) {
+            const card = document.getElementById(`note-card-${noteId}`);
+            if (!card) return;
+
+            const content = card.querySelector('.note-content');
+            const readMoreBtn = card.querySelector('.read-more-btn');
+
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                readMoreBtn.style.display = 'none';
+                card.classList.add('expanded');
+            } else {
+                content.classList.add('collapsed');
+                readMoreBtn.style.display = 'block';
+                card.classList.remove('expanded');
+            }
+        }
+
+        function copyNoteContent() {
+            const contentDiv = document.getElementById('noteContent');
+            const plainText = getPlainText(contentDiv.innerHTML);
+            navigator.clipboard.writeText(plainText).then(() => {
+                showDialog('alert', 'Info', data.language === 'ru' ? 'Содержимое скопировано!' : 'Content copied!');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        function downloadNoteAsTxt(noteId) {
+            const tab = getCurrentTab();
+            if (!tab) return;
+            const note = tab.notes.find(n => n.id === noteId);
+            if (!note) return;
+
+            const title = note.title;
+            const content = getPlainText(note.content);
+
+            const fileContent = `Title: ${title}\n\n${'-'.repeat(20)}\n\n${content}`;
+            const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function getPlainText(html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            tempDiv.querySelectorAll('.checkbox-wrapper').forEach(wrapper => {
+                const checkbox = wrapper.querySelector('input[type="checkbox"]');
+                const text = wrapper.querySelector('span').textContent;
+                const checkboxText = `[${checkbox.checked ? 'x' : ' '}] ${text}`;
+                wrapper.parentNode.replaceChild(document.createTextNode(checkboxText + '\n'), wrapper);
+            });
+
+            tempDiv.querySelectorAll('li').forEach(li => {
+                const parent = li.parentNode;
+                let prefix = '- ';
+
+                if (parent.tagName === 'OL') {
+                    const index = Array.from(parent.children).indexOf(li) + 1;
+                    prefix = `${index}. `;
+                }
+
+                li.prepend(document.createTextNode(prefix));
+            });
+
+            let processedText = tempDiv.innerText;
+
+            processedText = processedText.replace(/\n\s*\n/g, '\n');
+
+            return processedText;
+        }
+
+        function addCheckbox() {
+            const editor = document.getElementById('noteContent');
+            editor.focus();
+
+            const checkboxId = `cb-${Date.now()}`;
+            const htmlToInsert = `
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="${checkboxId}">
+                    <span contenteditable="true">Checkbox item</span>
+                </div>
+            `;
+            document.execCommand('insertHTML', false, htmlToInsert);
+        }
+
+        function updateCheckboxState(noteId, checkboxIndex, isChecked) {
+            const tab = getCurrentTab();
+            const note = tab.notes.find(n => n.id === noteId);
+            if (!note) return;
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = note.content;
+
+            const checkboxes = tempDiv.querySelectorAll('input[type="checkbox"]');
+            if (checkboxes[checkboxIndex]) {
+                checkboxes[checkboxIndex].checked = isChecked;
+                if (isChecked) {
+                    checkboxes[checkboxIndex].setAttribute('checked', 'checked');
+                } else {
+                    checkboxes[checkboxIndex].removeAttribute('checked');
+                }
+            }
+
+            note.content = tempDiv.innerHTML;
+            saveData();
+        }
+
+        function toggleFilterPanel() {
+            const panel = document.getElementById('filterPanel');
+            panel.classList.toggle('active');
+            if (panel.classList.contains('active')) {
+                populateTagColorFilter();
+                populateFilterTags();
+            }
+        }
+
+        function populateTagColorFilter() {
+            const container = document.getElementById('tagColorFilter');
+            const tab = getCurrentTab();
+            if (!tab) return;
+
+            const allColors = new Set();
+            tab.notes.forEach(note => {
+                if (note.tags) {
+                    note.tags.forEach(tag => allColors.add(tag.color));
+                }
+            });
+
+            container.innerHTML = '';
+            allColors.forEach(color => {
+                const dot = document.createElement('div');
+                dot.className = 'color-dot';
+                dot.style.backgroundColor = color;
+                dot.dataset.color = color;
+                dot.onclick = () => {
+                    dot.classList.toggle('selected');
+                    applyFilters();
+                };
+                container.appendChild(dot);
+            });
+        }
+
+        function populateFilterTags() {
+            const container = document.getElementById('filterTagsList');
+            const tab = getCurrentTab();
+            if (!tab) return;
+
+            const allTags = new Set();
+            tab.notes.forEach(note => {
+                if (note.tags) {
+                    note.tags.forEach(tag => allTags.add(tag.name));
+                }
+            });
+
+            container.innerHTML = '';
+            if (allTags.size === 0) {
+                container.innerHTML = '<span style="opacity:0.5; font-size:12px; padding:5px;">Tags not found</span>';
+                return;
+            }
+
+            Array.from(allTags).sort().forEach(tagName => {
+                const chip = document.createElement('div');
+                chip.className = 'filter-tag-chip';
+                chip.textContent = '#' + tagName;
+                chip.onclick = () => {
+                    document.getElementById('searchBox').value = '#' + tagName;
+                    renderNotes();
+                };
+                container.appendChild(chip);
+            });
+        }
+
+        function applyFilters() {
+            renderNotes();
+        }
+
+        function resetFilters() {
+            document.getElementById('sortOrder').value = 'custom';
+            document.querySelectorAll('#tagColorFilter .color-dot.selected').forEach(dot => {
+                dot.classList.remove('selected');
+            });
+            renderNotes();
+        }
+
+        function renderExistingTags() {
+            const container = document.getElementById('existingTagsList');
+            const tab = getCurrentTab();
+            const allTags = new Map();
+
+            if (tab) {
+                tab.notes.forEach(note => {
+                    if (note.tags) {
+                        note.tags.forEach(tag => {
+                            if (!allTags.has(tag.name)) {
+                                allTags.set(tag.name, tag.color);
+                            }
+                        });
+                    }
+                });
+            }
+
+            container.innerHTML = '';
+            if (allTags.size === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+
+            allTags.forEach((color, name) => {
+                const chip = document.createElement('div');
+                chip.className = 'existing-tag-chip';
+                chip.textContent = name;
+                chip.style.backgroundColor = color;
+                chip.onclick = () => {
+                    addTag(name, color);
+                };
+                container.appendChild(chip);
+            });
+        }
+
+        function switchView(mode) {
+            data.viewMode = mode;
+            saveData();
+            applyViewMode();
+        }
+
+        function applyViewMode() {
+            const grid = document.getElementById('notesGrid');
+            const gridBtn = document.getElementById('gridViewBtn');
+            const listBtn = document.getElementById('listViewBtn');
+
+            if (data.viewMode === 'list') {
+                grid.classList.add('list-view');
+                gridBtn.classList.remove('active');
+                listBtn.classList.add('active');
+            } else {
+                grid.classList.remove('list-view');
+                gridBtn.classList.add('active');
+                listBtn.classList.remove('active');
+            }
+        }
+
+        function handleTagInput(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = e.target.value.trim();
+                if (value) {
+                    pendingTagName = value;
+                    if (document.querySelector('.tag-color-option.selected')) {
+                        addTag(value, selectedTagColor);
+                        e.target.value = '';
+                        pendingTagName = '';
+                        hideTagColorPicker();
+                    }
+                }
+            }
+        }
+
+        function showTagColorPicker() {
+            document.getElementById('tagColorPicker').style.display = 'flex';
+        }
+
+        function hideTagColorPicker() {
+            setTimeout(() => {
+                if (!pendingTagName) {
+                    document.getElementById('tagColorPicker').style.display = 'none';
+                }
+            }, 200);
+        }
+
+        function addCustomTagColor(color) {
+            if (!data.customColors) data.customColors = [];
+            if (!data.customColors.includes(color)) {
+                data.customColors.push(color);
+                saveData();
+                renderTagColorPicker();
+                selectedTagColor = color;
+
+                document.querySelectorAll('.tag-color-option').forEach(o => o.classList.remove('selected'));
+                const newOption = document.querySelector(`.tag-color-option[data-color="${color}"]`);
+                if (newOption) newOption.classList.add('selected');
+
+                if (pendingTagName) {
+                    addTag(pendingTagName, selectedTagColor);
+                    document.getElementById('tagInput').value = '';
+                    pendingTagName = '';
+                    hideTagColorPicker();
+                }
+            }
+        }
+
+        function renderTagColorPicker() {
+            const container = document.getElementById('tagColorPicker');
+            const existingOptions = container.querySelectorAll('.tag-color-option:not(.custom)');
+            const addButton = container.querySelector('.add-custom-color-btn');
+
+            const customOptions = container.querySelectorAll('.tag-color-option.custom');
+            customOptions.forEach(el => el.remove());
+
+            if (data.customColors && data.customColors.length > 0) {
+                data.customColors.forEach(color => {
+                    const div = document.createElement('div');
+                    div.className = 'tag-color-option custom';
+                    div.style.backgroundColor = color;
+                    div.setAttribute('data-color', color);
+
+                    div.addEventListener('click', function () {
+                        selectedTagColor = this.getAttribute('data-color');
+                        document.querySelectorAll('.tag-color-option').forEach(o => o.classList.remove('selected'));
+                        this.classList.add('selected');
+
+                        if (pendingTagName) {
+                            addTag(pendingTagName, selectedTagColor);
+                            pendingTagName = '';
+                            document.getElementById('tagInput').value = '';
+                            hideTagColorPicker();
+                        }
+                    });
+
+                    container.insertBefore(div, addButton);
+                });
+            }
+        }
+
+        function addTag(name, color) {
+            if (!currentNoteTags.find(t => t.name === name)) {
+                currentNoteTags.push({ name, color });
+                renderTagsInput();
+            }
+        }
+
+        function removeTag(name) {
+            currentNoteTags = currentNoteTags.filter(t => t.name !== name);
+            renderTagsInput();
+        }
+
+        function renderTagsInput() {
+            const wrapper = document.getElementById('tagsInputWrapper');
+            const input = document.getElementById('tagInput');
+
+            wrapper.innerHTML = '';
+
+            currentNoteTags.forEach(tag => {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'tag-item';
+                tagEl.style.backgroundColor = tag.color;
+                tagEl.innerHTML = `
+                    <span>${tag.name}</span>
+                    <button onclick="removeTag('${tag.name}')">×</button>
+                `;
+                wrapper.appendChild(tagEl);
+            });
+
+            wrapper.appendChild(input);
+        }
+
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('noteContent').focus();
+            updateFormattingButtons();
+        }
+
+        function changeTextColor() {
+            const color = document.getElementById('textColorPicker').value;
+            document.execCommand('foreColor', false, color);
+            document.getElementById('noteContent').focus();
+        }
+
+        function clearFormatting() {
+            document.execCommand('removeFormat', false, null);
+            document.getElementById('noteContent').focus();
+            updateFormattingButtons();
+        }
+
+        function updateFormattingButtons() {
+            const buttons = {
+                'boldBtn': 'bold',
+                'italicBtn': 'italic',
+                'underlineBtn': 'underline',
+                'strikeBtn': 'strikeThrough',
+                'olBtn': 'insertOrderedList',
+                'ulBtn': 'insertUnorderedList'
+            };
+
+            Object.keys(buttons).forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (document.queryCommandState(buttons[btnId])) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        function togglePin(noteId) {
+            const tab = getCurrentTab();
+            if (!tab) return;
+
+            const note = tab.notes.find(n => n.id === noteId);
+            if (note) {
+                note.pinned = !note.pinned;
+                saveData();
+                renderNotes();
+            }
+        }
+
+        function showExportMenu() {
+            openSettings();
+            switchSettingsTab('export');
+        }
+
+        function switchLanguage(lang) {
+            data.language = lang;
+            saveData();
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const lang = data.language;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (translations[lang][key]) {
+                    el.placeholder = translations[lang][key];
+                }
+            });
+
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+            });
+
+            document.documentElement.lang = lang;
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('notesAppData');
+            if (saved) {
+                const loadedData = JSON.parse(saved);
+                data = { ...data, ...loadedData };
+
+                if (!data.settings) {
+                    data.settings = {
+                        noteFontFamily: 'inherit',
+                        noteFontSize: 14,
+                        noteLineHeight: 1.6,
+                        gridColumns: 280,
+                        cardPadding: 15,
+                        borderRadius: 6,
+                        iconType: 'svg'
+                    };
+                }
+                if (!data.customThemes) data.customThemes = [];
+                if (!data.customColors) data.customColors = [];
+                if (!data.settings.iconType) data.settings.iconType = 'svg';
+                if (!data.settings.borderRadius) data.settings.borderRadius = 6;
+                if (!data.language) data.language = 'en';
+                if (!data.viewMode) data.viewMode = 'grid';
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('notesAppData', JSON.stringify(data));
+        }
+
+        function createTab(name) {
+            const tab = {
+                id: Date.now().toString() + Math.random(),
+                name: name,
+                notes: []
+            };
+            data.tabs.push(tab);
+            data.activeTabId = tab.id;
+            saveData();
+            return tab;
+        }
+
+        function addNewTab() {
+            const defaultName = data.language === 'ru' ? 'Новая вкладка' : 'New Tab';
+            const promptText = data.language === 'ru' ? 'Название вкладки:' : 'Tab name:';
+
+            showDialog('prompt', promptText, '', defaultName, (name) => {
+                if (name && name.trim()) {
+                    createTab(name.trim());
+                    renderTabs();
+                    renderNotes();
+                }
+            });
+        }
+
+        function renameCurrentTab() {
+            const tab = getCurrentTab();
+            if (!tab) return;
+
+            const promptText = data.language === 'ru' ? 'Новое название:' : 'New name:';
+
+            showDialog('prompt', promptText, '', tab.name, (newName) => {
+                if (newName && newName.trim()) {
+                    tab.name = newName.trim();
+                    saveData();
+                    renderTabs();
+                }
+            });
+        }
+
+        function deleteTab(tabId, event) {
+            event.stopPropagation();
+            if (data.tabs.length === 1) {
+                const msg = data.language === 'ru' ? 'Нельзя удалить последнюю вкладку!' : 'Cannot delete the last tab!';
+                showDialog('alert', 'Error', msg);
+                return;
+            }
+
+            const msg = data.language === 'ru' ? 'Удалить вкладку и все её заметки?' : 'Delete tab and all its notes?';
+            showDialog('confirm', 'Confirm Delete', msg, '', (confirmed) => {
+                if (confirmed) {
+                    data.tabs = data.tabs.filter(t => t.id !== tabId);
+                    if (data.activeTabId === tabId) {
+                        data.activeTabId = data.tabs[0].id;
+                    }
+                    saveData();
+                    renderTabs();
+                    renderNotes();
+                }
+            });
+        }
+
+        function switchTab(tabId) {
+            data.activeTabId = tabId;
+            saveData();
+            renderTabs();
+            renderNotes();
+        }
+
+        function getCurrentTab() {
+            return data.tabs.find(t => t.id === data.activeTabId);
+        }
+
+        function handleTabDragStart(e, tabId) {
+            draggedTab = tabId;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleTabDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleTabDragEnter(e, tabId) {
+            if (draggedTab !== tabId) {
+                e.target.closest('.tab')?.classList.add('drag-over');
+            }
+        }
+
+        function handleTabDragLeave(e) {
+            e.target.closest('.tab')?.classList.remove('drag-over');
+        }
+
+        function handleTabDrop(e, targetTabId) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedTab !== targetTabId) {
+                const draggedIndex = data.tabs.findIndex(t => t.id === draggedTab);
+                const targetIndex = data.tabs.findIndex(t => t.id === targetTabId);
+
+                const [removed] = data.tabs.splice(draggedIndex, 1);
+                data.tabs.splice(targetIndex, 0, removed);
+
+                saveData();
+                renderTabs();
+            }
+
+            return false;
+        }
+
+        function handleTabDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('drag-over');
+            });
+            draggedTab = null;
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabsContainer');
+            const addButton = container.querySelector('.add-tab-btn') || document.createElement('button');
+            addButton.className = 'add-tab-btn';
+            addButton.onclick = addNewTab;
+            addButton.setAttribute('data-i18n', 'newTab');
+            addButton.textContent = translations[data.language].newTab || '+ New Tab';
+
+            container.innerHTML = '';
+
+            data.tabs.forEach(tab => {
+                const tabEl = document.createElement('div');
+                tabEl.className = 'tab' + (tab.id === data.activeTabId ? ' active' : '');
+                tabEl.draggable = true;
+
+                tabEl.addEventListener('dragstart', (e) => handleTabDragStart(e, tab.id));
+                tabEl.addEventListener('dragover', handleTabDragOver);
+                tabEl.addEventListener('dragenter', (e) => handleTabDragEnter(e, tab.id));
+                tabEl.addEventListener('dragleave', handleTabDragLeave);
+                tabEl.addEventListener('drop', (e) => handleTabDrop(e, tab.id));
+                tabEl.addEventListener('dragend', handleTabDragEnd);
+
+                tabEl.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON') {
+                        switchTab(tab.id);
+                    }
+                });
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = tab.name;
+                tabEl.appendChild(nameSpan);
+
+                if (data.tabs.length > 1) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'tab-close';
+                    closeBtn.textContent = '×';
+                    closeBtn.onclick = (e) => deleteTab(tab.id, e);
+                    tabEl.appendChild(closeBtn);
+                }
+
+                container.appendChild(tabEl);
+            });
+
+            container.appendChild(addButton);
+        }
+
+        function openNoteModal(note = null) {
+            const modal = document.getElementById('noteModal');
+            const title = document.getElementById('noteTitle');
+            const content = document.getElementById('noteContent');
+
+            if (note) {
+                editingNoteId = note.id;
+                title.value = note.title;
+                content.innerHTML = note.content;
+                currentNoteTags = note.tags || [];
+                const headerText = data.language === 'ru' ? 'Редактировать заметку' : 'Edit Note';
+                modal.querySelector('.modal-header span').textContent = headerText;
+            } else {
+                editingNoteId = null;
+                title.value = '';
+                content.innerHTML = '';
+                currentNoteTags = [];
+                const headerText = data.language === 'ru' ? 'Новая заметка' : 'New Note';
+                modal.querySelector('.modal-header span').textContent = headerText;
+            }
+
+            renderTagsInput();
+            renderExistingTags();
+            renderTagColorPicker();
+            modal.classList.add('active');
+            title.focus();
+        }
+
+        function closeNoteModal() {
+            document.getElementById('noteModal').classList.remove('active');
+            editingNoteId = null;
+            currentNoteTags = [];
+        }
+
+        function saveNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const contentDiv = document.getElementById('noteContent');
+
+            contentDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (cb.checked) {
+                    cb.setAttribute('checked', 'checked');
+                } else {
+                    cb.removeAttribute('checked');
+                }
+            });
+
+            const content = contentDiv.innerHTML.trim();
+
+            if (!title) {
+                const msg = data.language === 'ru' ? 'Введите заголовок заметки!' : 'Enter note title!';
+                showDialog('alert', 'Warning', msg);
+                return;
+            }
+
+            const tab = getCurrentTab();
+            if (!tab) return;
+
+            if (editingNoteId) {
+                const note = tab.notes.find(n => n.id === editingNoteId);
+                if (note) {
+                    note.title = title;
+                    note.content = content;
+                    note.tags = currentNoteTags;
+                    note.updated = new Date().toISOString();
+                }
+            } else {
+                const note = {
+                    id: Date.now().toString() + Math.random(),
+                    title: title,
+                    content: content,
+                    tags: currentNoteTags,
+                    pinned: false,
+                    created: new Date().toISOString(),
+                    updated: new Date().toISOString()
+                };
+                tab.notes.unshift(note);
+            }
+
+            saveData();
+            closeNoteModal();
+            renderNotes();
+        }
+
+        function deleteNote(noteId) {
+            const msg = data.language === 'ru' ? 'Удалить заметку?' : 'Delete note?';
+            showDialog('confirm', 'Confirm Delete', msg, '', (confirmed) => {
+                if (confirmed) {
+                    const tab = getCurrentTab();
+                    if (!tab) return;
+
+                    tab.notes = tab.notes.filter(n => n.id !== noteId);
+                    saveData();
+                    renderNotes();
+                }
+            });
+        }
+
+        let noteDragSourceId = null;
+        let noteLongPressTimer = null;
+        let isDraggingNote = false;
+
+        function getNotePositions() {
+            const positions = {};
+            document.querySelectorAll('.note-card').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                positions[card.id] = {
+                    left: rect.left,
+                    top: rect.top
+                };
+            });
+            return positions;
+        }
+
+        function animateNoteReorder(oldPositions) {
+            document.querySelectorAll('.note-card').forEach(card => {
+                const oldPos = oldPositions[card.id];
+                if (oldPos) {
+                    const newRect = card.getBoundingClientRect();
+                    const deltaX = oldPos.left - newRect.left;
+                    const deltaY = oldPos.top - newRect.top;
+
+                    if (deltaX !== 0 || deltaY !== 0) {
+                        card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                        card.style.transition = 'none';
+
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                card.style.transition = 'transform 0.4s cubic-bezier(0.2, 0, 0.2, 1)';
+                                card.style.transform = '';
+                                setTimeout(() => {
+                                    card.style.transition = '';
+                                }, 400);
+                            });
+                        });
+                    }
+                }
+            });
+        }
+
+        function renderNotes() {
+            const oldPositions = getNotePositions();
+            const container = document.getElementById('notesGrid');
+            const tab = getCurrentTab();
+
+            if (!tab) {
+                const msg = data.language === 'ru' ? 'Выберите вкладку' : 'Select a tab';
+                container.innerHTML = `<div class="empty-state"><h2>${msg}</h2></div>`;
+                return;
+            }
+
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            let notes = [...tab.notes];
+
+            if (searchTerm) {
+                if (searchTerm.startsWith('#')) {
+                    const tag = searchTerm.substring(1);
+                    notes = notes.filter(note =>
+                        note.tags && note.tags.some(t => t.name.toLowerCase().includes(tag))
+                    );
+                } else {
+                    notes = notes.filter(note => {
+                        const textContent = new DOMParser().parseFromString(note.content, 'text/html').body.textContent || '';
+                        return note.title.toLowerCase().includes(searchTerm) ||
+                            textContent.toLowerCase().includes(searchTerm);
+                    });
+                }
+            }
+
+            const selectedColors = Array.from(document.querySelectorAll('#tagColorFilter .color-dot.selected')).map(dot => dot.dataset.color);
+            if (selectedColors.length > 0) {
+                notes = notes.filter(note =>
+                    note.tags && note.tags.some(tag => selectedColors.includes(tag.color))
+                );
+            }
+
+            const sortOrder = document.getElementById('sortOrder').value;
+            if (sortOrder === 'alphabet') {
+                notes.sort((a, b) => a.title.localeCompare(b.title, data.language));
+            } else if (sortOrder === 'date') {
+                notes.sort((a, b) => new Date(b.updated) - new Date(a.updated));
+            } else {
+                notes.sort((a, b) => (b.pinned - a.pinned));
+            }
+
+            if (notes.length === 0) {
+                const h2Text = searchTerm || selectedColors.length > 0 ?
+                    (data.language === 'ru' ? 'Ничего не найдено' : 'Nothing found') :
+                    (data.language === 'ru' ? 'Заметок пока нет' : 'No notes yet');
+                const pText = searchTerm || selectedColors.length > 0 ?
+                    (data.language === 'ru' ? 'Попробуйте изменить запрос или сбросить фильтры' : 'Try changing query or reset filters') :
+                    (data.language === 'ru' ? 'Создайте первую заметку' : 'Create your first note');
+                container.innerHTML = `<div class="empty-state"><h2>${h2Text}</h2><p>${pText}</p></div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            notes.forEach(note => {
+                const card = document.createElement('div');
+                card.className = 'note-card' + (note.pinned ? ' pinned' : '') + (data.viewMode === 'list' ? ' list-view' : '');
+                card.id = `note-card-${note.id}`;
+
+                if (sortOrder === 'custom' && data.viewMode === 'grid') {
+                    card.addEventListener('dragover', handleNoteDragOver);
+                    card.addEventListener('dragenter', (e) => handleNoteDragEnter(e, card));
+                    card.addEventListener('dragleave', (e) => handleNoteDragLeave(e, card));
+                    card.addEventListener('drop', (e) => handleNoteDrop(e, note.id));
+                }
+
+                const options = { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' };
+                const dateCreated = new Date(note.created || note.updated).toLocaleString(data.language === 'ru' ? 'ru-RU' : 'en-US', options);
+                const dateUpdated = new Date(note.updated).toLocaleString(data.language === 'ru' ? 'ru-RU' : 'en-US', options);
+
+                const createdLabel = translations[data.language].created || 'Created';
+                const updatedLabel = translations[data.language].updated || 'Updated';
+
+                const pinTitle = note.pinned ? (data.language === 'ru' ? 'Открепить' : 'Unpin') : (data.language === 'ru' ? 'Закрепить' : 'Pin');
+                const editTitle = data.language === 'ru' ? 'Изменить' : 'Edit';
+                const deleteTitle = data.language === 'ru' ? 'Удалить' : 'Delete';
+                const downloadTitle = data.language === 'ru' ? 'Скачать .txt' : 'Download .txt';
+                const copyTitle = data.language === 'ru' ? 'Дублировать' : 'Duplicate';
+                const collapseTitle = translations[data.language].collapse;
+                const moreTitle = translations[data.language].more;
+
+                const tagsHTML = note.tags && note.tags.length > 0 ? `
+                    <div class="note-tags">
+                        ${note.tags.map(tag => `
+                            <span class="note-tag" style="background: ${tag.color}" onclick="searchByTag('${tag.name}')">${tag.name}</span>
+                        `).join('')}
+                    </div>
+                ` : '';
+
+                card.innerHTML = `
+                    <div class="note-actions-icons">
+                        <button class="secondary collapse-icon-btn" onclick="toggleNoteExpansion('${note.id}')" title="${collapseTitle}">
+                             <span class="icon-emoji">🔼</span>
+                             <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"/></svg>
+                        </button>
+                        <button class="secondary pin-btn ${note.pinned ? 'pinned' : ''}" onclick="togglePin('${note.id}')" title="${pinTitle}">
+                            <span class="icon-emoji">${note.pinned ? '📌' : '📍'}</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"/></svg>
+                        </button>
+                        <button class="secondary" onclick='openNoteModal(${JSON.stringify(note).replace(/'/g, "&apos;")})' title="${editTitle}">
+                            <span class="icon-emoji">✏️</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        </button>
+                        <button class="danger" onclick="deleteNote('${note.id}')" title="${deleteTitle}">
+                            <span class="icon-emoji">🗑️</span>
+                            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        </button>
+                    </div>
+                    <div class="note-title"
+                         draggable="${sortOrder === 'custom' && data.viewMode === 'grid' ? 'true' : 'false'}"
+                         ondragstart="handleNoteDragStart(event, '${note.id}')"
+                         ondragend="handleNoteDragEnd(event)"
+                         onmousedown="startLongPress(event, '${note.id}', this.closest('.note-card'))"
+                         ontouchstart="startLongPress(event, '${note.id}', this.closest('.note-card'))"
+                         onmouseup="cancelLongPress()"
+                         onmouseleave="cancelLongPress()"
+                         ontouchend="cancelLongPress()">
+                        ${escapeHtml(note.title)}
+                    </div>
+                    <div class="note-content">${note.content}</div>
+                    <button class="read-more-btn" onclick="toggleNoteExpansion('${note.id}')">${moreTitle}</button>
+                    ${tagsHTML}
+                    <div class="note-footer">
+                        <div class="note-date-label">
+                            <span>${createdLabel}</span>
+                            <span>${dateCreated}</span>
+                        </div>
+                        <div class="footer-controls">
+                             <button class="secondary action-icon-btn" onclick="duplicateNote('${note.id}')" title="${copyTitle}">
+                                <span class="icon-emoji">📄</span>
+                                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                            </button>
+                            <button class="secondary action-icon-btn" onclick="downloadNoteAsTxt('${note.id}')" title="${downloadTitle}">
+                                <span class="icon-emoji">💾</span>
+                                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19,9h-4V3H9v6H5l7,7L19,9z M5,18v2h14v-2H5z"/></svg>
+                            </button>
+                        </div>
+                        <div class="note-date-label" style="text-align: right;">
+                            <span>${updatedLabel}</span>
+                            <span>${dateUpdated}</span>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+
+                if (data.viewMode === 'grid') {
+                    const contentDiv = card.querySelector('.note-content');
+                    if (contentDiv.scrollHeight > 240) {
+                        contentDiv.classList.add('collapsed');
+                        card.querySelector('.read-more-btn').style.display = 'block';
+                    }
+                }
+
+                const contentDiv = card.querySelector('.note-content');
+                contentDiv.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
+                    checkbox.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        updateCheckboxState(note.id, index, checkbox.checked);
+                    });
+                });
+            });
+            animateNoteReorder(oldPositions);
+        }
+
+        function startLongPress(e, noteId, cardElement) {
+            if (e.target.closest('button') || e.target.closest('input')) return;
+
+            noteLongPressTimer = setTimeout(() => {
+                isDraggingNote = true;
+                cardElement.classList.add('drag-active');
+                if (navigator.vibrate) navigator.vibrate(50);
+            }, 500);
+        }
+
+        function cancelLongPress() {
+            clearTimeout(noteLongPressTimer);
+            isDraggingNote = false;
+            document.querySelectorAll('.note-card').forEach(c => {
+                c.classList.remove('drag-active');
+            });
+        }
+
+        function handleNoteDragStart(e, noteId) {
+            if (!isDraggingNote) {
+                e.preventDefault();
+                return;
+            }
+            noteDragSourceId = noteId;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', noteId);
+            
+            const card = e.target.closest('.note-card');
+            e.dataTransfer.setDragImage(card, 0, 0);
+            
+            setTimeout(() => {
+                card.style.opacity = '0.4';
+            }, 0);
+        }
+
+        function handleNoteDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleNoteDragEnter(e, cardElement) {
+            cardElement.classList.add('drag-over-note');
+        }
+
+        function handleNoteDragLeave(e, cardElement) {
+            cardElement.classList.remove('drag-over-note');
+        }
+
+        function handleNoteDrop(e, targetNoteId) {
+            e.stopPropagation();
+
+            if (noteDragSourceId !== targetNoteId) {
+                const tab = getCurrentTab();
+                const fromIndex = tab.notes.findIndex(n => n.id === noteDragSourceId);
+                const toIndex = tab.notes.findIndex(n => n.id === targetNoteId);
+
+                if (fromIndex > -1 && toIndex > -1) {
+                    const [movedNote] = tab.notes.splice(fromIndex, 1);
+                    tab.notes.splice(toIndex, 0, movedNote);
+                    saveData();
+                    renderNotes();
+                }
+            }
+            return false;
+        }
+
+        function handleNoteDragEnd(e) {
+            const card = e.target.closest('.note-card');
+            if (card) {
+                card.style.opacity = '1';
+            }
+            isDraggingNote = false;
+            document.querySelectorAll('.note-card').forEach(card => {
+                card.classList.remove('drag-over-note');
+                card.classList.remove('drag-active');
+            });
+        }
+
+        function searchByTag(tagName) {
+            document.getElementById('searchBox').value = '#' + tagName;
+            renderNotes();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function openSettings() {
+            document.getElementById('noteFontFamily').value = data.settings.noteFontFamily;
+            document.getElementById('noteFontSize').value = data.settings.noteFontSize;
+            document.getElementById('noteLineHeight').value = data.settings.noteLineHeight;
+            document.getElementById('gridColumns').value = data.settings.gridColumns;
+            document.getElementById('cardPadding').value = data.settings.cardPadding;
+            document.getElementById('borderRadius').value = data.settings.borderRadius;
+            document.getElementById('themeSelector').value = data.theme;
+            document.getElementById('iconType').value = data.settings.iconType;
+
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function switchSettingsTab(tabName) {
+            document.querySelectorAll('.tab-in-modal').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.tab-in-modal[onclick="switchSettingsTab('${tabName}')"]`).classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            activeSettingsTab = tabName;
+        }
+
+        function applyPreset(type) {
+            if (type === 'standard') {
+                data.settings.noteFontFamily = 'inherit';
+                data.settings.noteFontSize = 14;
+                data.settings.noteLineHeight = 1.6;
+                data.settings.gridColumns = 280;
+                data.settings.cardPadding = 15;
+                data.settings.borderRadius = 6;
+            } else if (type === 'recommended') {
+                data.settings.noteFontFamily = "'Comic Sans MS', cursive";
+                data.settings.noteFontSize = 13;
+                data.settings.noteLineHeight = 1.5;
+                data.settings.gridColumns = 500;
+                data.settings.cardPadding = 20;
+                data.settings.borderRadius = 10;
+            }
+            saveData();
+            openSettings();
+            applySettings();
+            renderNotes();
+        }
+
+        function updateSettings() {
+            data.settings.noteFontFamily = document.getElementById('noteFontFamily').value;
+            data.settings.noteFontSize = parseInt(document.getElementById('noteFontSize').value);
+            data.settings.noteLineHeight = parseFloat(document.getElementById('noteLineHeight').value);
+            data.settings.gridColumns = parseInt(document.getElementById('gridColumns').value);
+            data.settings.cardPadding = parseInt(document.getElementById('cardPadding').value);
+            data.settings.borderRadius = parseInt(document.getElementById('borderRadius').value);
+
+            saveData();
+            applySettings();
+            renderNotes();
+        }
+
+        function updateIconType() {
+            const iconType = document.getElementById('iconType').value;
+            data.settings.iconType = iconType;
+            saveData();
+            applyIconType();
+        }
+
+        function applyIconType() {
+            document.body.classList.remove('use-emoji', 'use-svg');
+            document.body.classList.add('use-' + data.settings.iconType);
+        }
+
+        function applySettings() {
+            const root = document.documentElement;
+            root.style.setProperty('--note-font-family', data.settings.noteFontFamily);
+            root.style.setProperty('--note-font-size', data.settings.noteFontSize + 'px');
+            root.style.setProperty('--note-line-height', data.settings.noteLineHeight);
+            root.style.setProperty('--grid-columns', data.settings.gridColumns + 'px');
+            root.style.setProperty('--card-padding', data.settings.cardPadding + 'px');
+            root.style.setProperty('--border-radius', data.settings.borderRadius + 'px');
+            applyIconType();
+        }
+
+        function changeTheme() {
+            const theme = document.getElementById('themeSelector').value;
+            data.theme = theme;
+            saveData();
+            applyTheme();
+        }
+
+        function applyTheme() {
+            const customTheme = data.customThemes.find(t => t.id === data.theme);
+
+            if (customTheme) {
+                applyCustomThemeColors(customTheme);
+                document.body.className = document.body.className.replace(/dark|light|classic/g, '').trim();
+            } else {
+                const root = document.documentElement;
+                const props = ['--bg-color', '--card-bg', '--text-color', '--border-color', '--primary-color', '--primary-hover', '--header-bg', '--sidebar-bg', '--hover-bg', '--tab-active', '--bg-gradient', '--card-gradient', '--header-gradient'];
+                props.forEach(prop => root.style.removeProperty(prop));
+
+                const currentClasses = document.body.className.split(' ').filter(c => !['dark', 'light', 'classic'].includes(c));
+                document.body.className = [...currentClasses, data.theme].join(' ');
+            }
+
+            applyIconType();
+        }
+
+        function applyCustomThemeColors(theme) {
+            const root = document.documentElement;
+            root.style.setProperty('--bg-color', theme.colors.bgColor);
+            root.style.setProperty('--card-bg', theme.colors.cardBg);
+            root.style.setProperty('--text-color', theme.colors.textColor);
+            root.style.setProperty('--border-color', theme.colors.borderColor);
+            root.style.setProperty('--primary-color', theme.colors.primaryColor);
+            root.style.setProperty('--primary-hover', adjustColor(theme.colors.primaryColor, -20));
+            root.style.setProperty('--header-bg', theme.colors.headerBg);
+            root.style.setProperty('--sidebar-bg', theme.colors.sidebarBg);
+            root.style.setProperty('--hover-bg', theme.colors.hoverBg);
+            root.style.setProperty('--tab-active', theme.colors.primaryColor);
+
+            if (theme.gradients) {
+                root.style.setProperty('--bg-gradient', theme.gradients.bgGradient || 'none');
+                root.style.setProperty('--card-gradient', theme.gradients.cardGradient || 'none');
+                root.style.setProperty('--header-gradient', theme.gradients.headerGradient || 'none');
+            }
+        }
+
+        function adjustColor(color, amount) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+            const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+            const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+            return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+        }
+
+        function updateGradientControls() {
+            const bgType = document.getElementById('bgGradientType').value;
+            const cardType = document.getElementById('cardGradientType').value;
+
+            document.getElementById('bgGradientControls').style.display = bgType !== 'none' ? 'grid' : 'none';
+            document.getElementById('gradientAngleControl').style.display = bgType === 'linear' ? 'flex' : 'none';
+
+            document.getElementById('cardGradientControls').style.display = cardType !== 'none' ? 'grid' : 'none';
+            document.getElementById('cardGradientAngleControl').style.display = cardType === 'linear' ? 'flex' : 'none';
+        }
+
+        function createGradientString(type, color1, color2, angle = 135) {
+            if (type === 'linear') {
+                return `linear-gradient(${angle}deg, ${color1}, ${color2})`;
+            } else if (type === 'radial') {
+                return `radial-gradient(circle, ${color1}, ${color2})`;
+            }
+            return 'none';
+        }
+
+        function updateGradientPreview() {
+            updateGradientControls();
+
+            const preview = document.getElementById('gradientPreview');
+            const bgType = document.getElementById('bgGradientType').value;
+
+            if (bgType !== 'none') {
+                const color1 = document.getElementById('bgGradient1').value;
+                const color2 = document.getElementById('bgGradient2').value;
+                const angle = document.getElementById('bgGradientAngle').value;
+                preview.style.background = createGradientString(bgType, color1, color2, angle);
+            } else {
+                preview.style.background = document.getElementById('customBgColor').value;
+            }
+        }
+
+        function saveCustomTheme() {
+            const name = document.getElementById('customThemeName').value.trim();
+            if (!name) {
+                const msg = data.language === 'ru' ? 'Введите название темы!' : 'Enter theme name!';
+                showDialog('alert', 'Warning', msg);
+                return;
+            }
+
+            const bgType = document.getElementById('bgGradientType').value;
+            const cardType = document.getElementById('cardGradientType').value;
+
+            const theme = {
+                id: 'custom-' + Date.now(),
+                name: name,
+                colors: {
+                    bgColor: document.getElementById('customBgColor').value,
+                    cardBg: document.getElementById('customCardBg').value,
+                    textColor: document.getElementById('customTextColor').value,
+                    borderColor: document.getElementById('customBorderColor').value,
+                    primaryColor: document.getElementById('customPrimaryColor').value,
+                    headerBg: document.getElementById('customHeaderBg').value,
+                    hoverBg: document.getElementById('customHoverBg').value,
+                    sidebarBg: document.getElementById('customSidebarBg').value
+                },
+                gradients: {
+                    bgGradient: bgType !== 'none' ? createGradientString(
+                        bgType,
+                        document.getElementById('bgGradient1').value,
+                        document.getElementById('bgGradient2').value,
+                        document.getElementById('bgGradientAngle').value
+                    ) : 'none',
+                    cardGradient: cardType !== 'none' ? createGradientString(
+                        cardType,
+                        document.getElementById('cardGradient1').value,
+                        document.getElementById('cardGradient2').value,
+                        document.getElementById('cardGradientAngle').value
+                    ) : 'none',
+                    headerGradient: 'none'
+                }
+            };
+
+            data.customThemes.push(theme);
+            saveData();
+            renderCustomThemes();
+            const msg = data.language === 'ru' ? 'Тема сохранена!' : 'Theme saved!';
+            showDialog('alert', 'Success', msg);
+        }
+
+        function renderCustomThemes() {
+            const container = document.getElementById('customThemesList');
+
+            if (data.customThemes.length === 0) {
+                const msg = data.language === 'ru' ? 'У вас пока нет сохранённых тем' : 'You have no saved themes yet';
+                container.innerHTML = `<div class="info-box">${msg}</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            data.customThemes.forEach(theme => {
+                const item = document.createElement('div');
+                item.className = 'custom-theme-item';
+                const applyText = data.language === 'ru' ? 'Применить' : 'Apply';
+                const editText = data.language === 'ru' ? 'Изменить' : 'Edit';
+                const exportText = data.language === 'ru' ? 'Экспорт/Импорт' : 'Export';
+                const deleteText = data.language === 'ru' ? 'Удалить' : 'Delete';
+
+                item.innerHTML = `
+                    <div class="theme-name">${escapeHtml(theme.name)}</div>
+                    <div class="theme-actions">
+                        <button class="secondary" onclick="applyCustomTheme('${theme.id}')">${applyText}</button>
+                        <button class="secondary" onclick="editCustomTheme('${theme.id}')">${editText}</button>
+                        <button class="secondary" onclick="exportSingleTheme('${theme.id}')">${exportText}</button>
+                        <button class="danger" onclick="deleteCustomTheme('${theme.id}')">${deleteText}</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function applyCustomTheme(themeId) {
+            data.theme = themeId;
+            saveData();
+            applyTheme();
+            const msg = data.language === 'ru' ? 'Тема применена!' : 'Theme applied!';
+            showDialog('alert', 'Success', msg);
+        }
+
+        function editCustomTheme(themeId) {
+            const theme = data.customThemes.find(t => t.id === themeId);
+            if (!theme) return;
+
+            document.getElementById('customThemeName').value = theme.name;
+            document.getElementById('customBgColor').value = theme.colors.bgColor;
+            document.getElementById('customCardBg').value = theme.colors.cardBg;
+            document.getElementById('customTextColor').value = theme.colors.textColor;
+            document.getElementById('customBorderColor').value = theme.colors.borderColor;
+            document.getElementById('customPrimaryColor').value = theme.colors.primaryColor;
+            document.getElementById('customHeaderBg').value = theme.colors.headerBg;
+            document.getElementById('customHoverBg').value = theme.colors.hoverBg;
+            document.getElementById('customSidebarBg').value = theme.colors.sidebarBg;
+
+            data.customThemes = data.customThemes.filter(t => t.id !== themeId);
+            saveData();
+            renderCustomThemes();
+        }
+
+        function deleteCustomTheme(themeId) {
+            const msg = data.language === 'ru' ? 'Удалить эту тему?' : 'Delete this theme?';
+            showDialog('confirm', 'Confirm', msg, '', (confirmed) => {
+                if (confirmed) {
+                    data.customThemes = data.customThemes.filter(t => t.id !== themeId);
+                    if (data.theme === themeId) {
+                        data.theme = 'light';
+                        applyTheme();
+                    }
+                    saveData();
+                    renderCustomThemes();
+                }
+            });
+        }
+
+        function exportCustomTheme() {
+            const name = document.getElementById('customThemeName').value.trim();
+            if (!name) {
+                const msg = data.language === 'ru' ? 'Введите название темы перед экспортом!' : 'Enter theme name before export!';
+                showDialog('alert', 'Warning', msg);
+                return;
+            }
+
+            const bgType = document.getElementById('bgGradientType').value;
+            const cardType = document.getElementById('cardGradientType').value;
+
+            const theme = {
+                type: 'theme',
+                name: name,
+                colors: {
+                    bgColor: document.getElementById('customBgColor').value,
+                    cardBg: document.getElementById('customCardBg').value,
+                    textColor: document.getElementById('customTextColor').value,
+                    borderColor: document.getElementById('customBorderColor').value,
+                    primaryColor: document.getElementById('customPrimaryColor').value,
+                    headerBg: document.getElementById('customHeaderBg').value,
+                    hoverBg: document.getElementById('customHoverBg').value,
+                    sidebarBg: document.getElementById('customSidebarBg').value
+                },
+                gradients: {
+                    bgGradient: bgType !== 'none' ? createGradientString(
+                        bgType,
+                        document.getElementById('bgGradient1').value,
+                        document.getElementById('bgGradient2').value,
+                        document.getElementById('bgGradientAngle').value
+                    ) : 'none',
+                    cardGradient: cardType !== 'none' ? createGradientString(
+                        cardType,
+                        document.getElementById('cardGradient1').value,
+                        document.getElementById('cardGradient2').value,
+                        document.getElementById('cardGradientAngle').value
+                    ) : 'none'
+                }
+            };
+
+            downloadJSON(theme, `theme-${name}.json`);
+        }
+
+        function exportSingleTheme(themeId) {
+            const theme = data.customThemes.find(t => t.id === themeId);
+            if (!theme) return;
+
+            const exportData = {
+                type: 'theme',
+                name: theme.name,
+                colors: theme.colors,
+                gradients: theme.gradients
+            };
+
+            downloadJSON(exportData, `theme-${theme.name}.json`);
+        }
+
+        function importCustomTheme() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const theme = JSON.parse(e.target.result);
+
+                        if (theme.type !== 'theme' || !theme.name || !theme.colors) {
+                            const msg = data.language === 'ru' ? 'Неверный формат файла темы!' : 'Invalid theme file format!';
+                            showDialog('alert', 'Error', msg);
+                            return;
+                        }
+
+                        const newTheme = {
+                            id: 'custom-' + Date.now(),
+                            name: theme.name,
+                            colors: theme.colors,
+                            gradients: theme.gradients || { bgGradient: 'none', cardGradient: 'none', headerGradient: 'none' }
+                        };
+
+                        data.customThemes.push(newTheme);
+                        saveData();
+                        renderCustomThemes();
+                        const msg = data.language === 'ru' ? 'Тема импортирована!' : 'Theme imported!';
+                        showDialog('alert', 'Success', msg);
+                    } catch (error) {
+                        const msg = data.language === 'ru' ? 'Ошибка при импорте темы!' : 'Error importing theme!';
+                        showDialog('alert', 'Error', msg);
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            input.click();
+        }
+
+        function exportCurrentTab() {
+            const tab = getCurrentTab();
+            if (!tab) return;
+
+            const exportData = {
+                type: 'single-tab',
+                tab: {
+                    name: tab.name,
+                    notes: tab.notes
+                },
+                exportDate: new Date().toISOString()
+            };
+
+            downloadJSON(exportData, `tab-${tab.name}-${new Date().toISOString().split('T')[0]}.json`);
+        }
+
+        function importTab() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+
+                        if (imported.type !== 'single-tab' || !imported.tab) {
+                            const msg = data.language === 'ru' ? 'Неверный формат файла вкладки!' : 'Invalid tab file format!';
+                            showDialog('alert', 'Error', msg);
+                            return;
+                        }
+
+                        const newTab = {
+                            id: Date.now().toString() + Math.random(),
+                            name: imported.tab.name,
+                            notes: imported.tab.notes || []
+                        };
+
+                        data.tabs.push(newTab);
+                        data.activeTabId = newTab.id;
+                        saveData();
+                        renderTabs();
+                        renderNotes();
+                        const msg = data.language === 'ru' ? 'Вкладка импортирована!' : 'Tab imported!';
+                        showDialog('alert', 'Success', msg);
+                    } catch (error) {
+                        const msg = data.language === 'ru' ? 'Ошибка при импорте вкладки!' : 'Error importing tab!';
+                        showDialog('alert', 'Error', msg);
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            input.click();
+        }
+
+        function exportAllData() {
+            const exportData = {
+                type: 'workspace',
+                tabs: data.tabs,
+                activeTabId: data.activeTabId,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+
+            downloadJSON(exportData, `workspace-${new Date().toISOString().split('T')[0]}.json`);
+            const msg = data.language === 'ru' ? 'Рабочее пространство экспортировано!' : 'Workspace exported!';
+            showDialog('alert', 'Success', msg);
+        }
+
+        function importAllData() {
+            const msg1 = data.language === 'ru' ?
+                '⚠️ ВНИМАНИЕ! Это действие заменит все ваши вкладки и заметки!\n\nНастройки и темы сохранятся.\n\nВы уверены?' :
+                '⚠️ WARNING! This will replace all your tabs and notes!\n\nSettings and themes will be preserved.\n\nAre you sure?';
+
+            showDialog('confirm', 'Dangerous Action', msg1, '', (confirmed) => {
+                if (confirmed) {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+
+                    input.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const imported = JSON.parse(e.target.result);
+
+                                if (imported.type !== 'workspace' || !imported.tabs) {
+                                    const msg = data.language === 'ru' ? 'Неверный формат файла рабочего пространства!' : 'Invalid workspace file format!';
+                                    showDialog('alert', 'Error', msg);
+                                    return;
+                                }
+
+                                const currentSettings = data.settings;
+                                const currentTheme = data.theme;
+                                const currentCustomThemes = data.customThemes;
+                                const currentLanguage = data.language;
+                                const currentViewMode = data.viewMode;
+                                const currentCustomColors = data.customColors;
+
+                                data.tabs = imported.tabs;
+                                data.activeTabId = imported.activeTabId || (imported.tabs[0]?.id);
+                                data.settings = currentSettings;
+                                data.theme = currentTheme;
+                                data.customThemes = currentCustomThemes;
+                                data.language = currentLanguage;
+                                data.viewMode = currentViewMode;
+                                data.customColors = currentCustomColors;
+
+                                saveData();
+                                renderTabs();
+                                renderNotes();
+                                closeSettings();
+                                const msg = data.language === 'ru' ? 'Рабочее пространство импортировано!' : 'Workspace imported!';
+                                showDialog('alert', 'Success', msg);
+                            } catch (error) {
+                                const msg = data.language === 'ru' ? 'Ошибка при импорте данных!' : 'Error importing data!';
+                                showDialog('alert', 'Error', msg);
+                            }
+                        };
+                        reader.readAsText(file);
+                    };
+                    input.click();
+                }
+            });
+        }
+
+        function resetAllData() {
+            const msg1 = data.language === 'ru' ?
+                '⚠️ ВНИМАНИЕ! Это удалит ВСЕ ваши данные!\n\nВы уверены?' :
+                '⚠️ WARNING! This will delete ALL your data!\n\nAre you sure?';
+
+            showDialog('confirm', 'Dangerous Action', msg1, '', (confirmed) => {
+                if (confirmed) {
+                    localStorage.removeItem('notesAppData');
+                    location.reload();
+                }
+            });
+        }
+
+        function downloadJSON(data, filename) {
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Обработка градиентов
+        document.getElementById('bgGradientType').addEventListener('change', updateGradientControls);
+        document.getElementById('cardGradientType').addEventListener('change', updateGradientControls);
+
+        // Горячие клавиши
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                openNoteModal();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+                e.preventDefault();
+                openSettings();
+            }
+            if (e.key === 'Escape') {
+                closeNoteModal();
+                closeSettings();
+            }
+
+            // Форматирование в редакторе
+            const editor = document.getElementById('noteContent');
+            if (editor && document.activeElement === editor) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                    e.preventDefault();
+                    formatText('bold');
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                    e.preventDefault();
+                    formatText('italic');
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+                    e.preventDefault();
+                    formatText('underline');
+                }
+            }
+        });
+
+        // Запуск приложения
+        init();
+    </script>
+</body>
+</html>
