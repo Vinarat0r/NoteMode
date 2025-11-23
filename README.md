@@ -52,5 +52,6 @@ Simply visit the following link: https://notemode.vercel.app
 ---
 *Project created to provide a simple and fast tool for planning and storing ideas.*
 
-<img width="2547" height="1270" alt="image" src="https://github.com/user-attachments/assets/aa2ce22f-69c3-4cf5-83b1-5ace3dcca7af" />
+<img width="2548" height="1274" alt="image" src="https://github.com/user-attachments/assets/0f24ed9f-0ac3-42e5-ba2e-b7a9e7a948f5" />
+
 
