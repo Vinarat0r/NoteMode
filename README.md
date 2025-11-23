@@ -37,7 +37,7 @@ It operates as a Single Page Application (SPA) packaged into a single HTML file.
 You can use NoteMode directly online or download it for offline use.
 
 **Option 1: Online**
-Simply visit the following link: https://notemode.vercel.app
+Simply visit the following link: https://notemode.vercel.app or https://vinarat0r.github.io/NoteMode/ (Recommended)
 
 **Option 2: Offline (Self-hosted)**
 1. Download the `index.html` file from this repository.
