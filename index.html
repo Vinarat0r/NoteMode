@@ -399,12 +399,45 @@
 
         .search-box {
             width: 100%;
-            padding: 10px 10px 10px 40px;
+            padding: 10px 45px 10px 40px;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
             background: var(--card-bg);
             color: var(--text-color);
             font-size: 14px;
+        }
+
+        .search-box-wrapper .clear-search {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 20px;
+            line-height: 1;
+            color: var(--text-color);
+            opacity: 0;
+            cursor: pointer;
+            pointer-events: none;
+            transition: opacity 0.3s ease, background 0.3s ease;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .search-box-wrapper .clear-search:hover {
+            background: var(--hover-bg);
+            opacity: 1;
+        }
+
+        .search-box-wrapper.has-text .clear-search {
+            opacity: 0.7;
+            pointer-events: auto;
         }
 
         .notes-grid {
@@ -854,7 +887,11 @@
             color: var(--text-color);
             font-size: 14px;
             line-height: 1.6;
-            outline: none;
+            font-family: var(--note-font-family);
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            position: relative;
+            user-select: text;
         }
 
         .editor-content ul,
@@ -1394,6 +1431,7 @@
                 </svg>
                 <input type="text" class="search-box" id="searchBox" placeholder="Search notes or #tag..."
                     data-i18n-placeholder="searchPlaceholder">
+                <button class="clear-search" id="clearSearchBtn" title="Очистить поиск">×</button>
             </div>
 
             <div class="filter-container">
@@ -2156,6 +2194,15 @@
                 }
             });
 
+            const clearBtn = document.getElementById('clearSearchBtn');
+            clearBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                searchBox.value = '';
+                searchBox.dispatchEvent(new Event('input', { bubbles: true }));
+                searchBox.focus();
+            });
+
             const tagInput = document.getElementById('tagInput');
             tagInput.addEventListener('keydown', handleTagInput);
             tagInput.addEventListener('focus', showTagColorPicker);
@@ -2260,16 +2307,21 @@
         }
 
         function getPlainText(html) {
-            const tempDiv = document.createElement('div');
+            let tempDiv = document.createElement('div');
+
+            // Replace <br> with a unique placeholder that won't be stripped.
+            html = html.replace(/<br\s*\/?>/gi, '\n');
             tempDiv.innerHTML = html;
 
+            // Handle checkbox wrappers
             tempDiv.querySelectorAll('.checkbox-wrapper').forEach(wrapper => {
                 const checkbox = wrapper.querySelector('input[type="checkbox"]');
                 const text = wrapper.querySelector('span').textContent;
                 const checkboxText = `[${checkbox.checked ? 'x' : ' '}] ${text}`;
-                wrapper.parentNode.replaceChild(document.createTextNode(checkboxText + '\n'), wrapper);
+                wrapper.parentNode.replaceChild(document.createTextNode(checkboxText), wrapper);
             });
-
+            
+            // Handle lists
             tempDiv.querySelectorAll('li').forEach(li => {
                 const parent = li.parentNode;
                 let prefix = '- ';
@@ -2278,15 +2330,25 @@
                     const index = Array.from(parent.children).indexOf(li) + 1;
                     prefix = `${index}. `;
                 }
-
-                li.prepend(document.createTextNode(prefix));
+                const textNode = document.createTextNode(prefix);
+                li.prepend(textNode);
             });
 
-            let processedText = tempDiv.innerText;
+            // Add newlines after block elements to preserve structure.
+            tempDiv.querySelectorAll('div, p, li').forEach(el => {
+                const newline = document.createTextNode('\n');
+                el.parentNode.insertBefore(newline, el.nextSibling);
+            });
+            
+            // Extract text content
+            let processedText = tempDiv.textContent || tempDiv.innerText || "";
+            
+            // Clean up extra newlines, but preserve double newlines (blank lines).
+            processedText = processedText.replace(/\n\s*\n/g, '\n\n');
+            processedText = processedText.replace(/(\n\n)+/g, '\n\n');
 
-            processedText = processedText.replace(/\n\s*\n/g, '\n');
 
-            return processedText;
+            return processedText.trim();
         }
 
         function addCheckbox() {
@@ -2382,10 +2444,7 @@
                 const chip = document.createElement('div');
                 chip.className = 'filter-tag-chip';
                 chip.textContent = '#' + tagName;
-                chip.onclick = () => {
-                    document.getElementById('searchBox').value = '#' + tagName;
-                    renderNotes();
-                };
+                chip.onclick = () => setSearchValue('#' + tagName);
                 container.appendChild(chip);
             });
         }
@@ -3249,12 +3308,15 @@
             });
         }
 
-        function searchByTag(tagName) {
-            document.getElementById('searchBox').value = '#' + tagName;
-            renderNotes();
-        }
+function setSearchValue(value) {
+    const searchBox = document.getElementById('searchBox');
+    searchBox.value = value;
+    searchBox.dispatchEvent(new Event('input', { bubbles: true }));
+}
 
-        function escapeHtml(text) {
+function searchByTag(tagName) {
+    setSearchValue('#' + tagName);
+}        function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
