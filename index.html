@@ -1034,6 +1034,39 @@
             transform: scale(1.2);
         }
 
+        .tag-color-option.custom {
+            position: relative;
+        }
+
+        .tag-color-option .delete-color-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 14px;
+            height: 14px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            line-height: 1;
+            cursor: pointer;
+            border: 1px solid white;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .tag-color-option.custom:hover .delete-color-btn {
+            display: flex;
+        }
+
+        .tag-color-option .delete-color-btn:hover {
+            background: #c0392b;
+            transform: scale(1.2);
+        }
+
         .add-custom-color-btn {
             width: 30px;
             height: 30px;
@@ -2568,6 +2601,24 @@
             }
         }
 
+        function deleteCustomTagColor(color, event) {
+            event.stopPropagation();
+            const msg = data.language === 'ru' ? 'Удалить этот цвет?' : 'Delete this color?';
+            showDialog('confirm', 'Confirm Delete', msg, '', (confirmed) => {
+                if (confirmed) {
+                    data.customColors = data.customColors.filter(c => c !== color);
+                    if (selectedTagColor === color) {
+                        selectedTagColor = '#3498db';
+                        document.querySelectorAll('.tag-color-option').forEach(o => o.classList.remove('selected'));
+                        const defaultOption = document.querySelector('.tag-color-option[data-color="#3498db"]');
+                        if (defaultOption) defaultOption.classList.add('selected');
+                    }
+                    saveData();
+                    renderTagColorPicker();
+                }
+            });
+        }
+
         function renderTagColorPicker() {
             const container = document.getElementById('tagColorPicker');
             const existingOptions = container.querySelectorAll('.tag-color-option:not(.custom)');
@@ -2583,7 +2634,15 @@
                     div.style.backgroundColor = color;
                     div.setAttribute('data-color', color);
 
-                    div.addEventListener('click', function () {
+                    const deleteBtn = document.createElement('div');
+                    deleteBtn.className = 'delete-color-btn';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.onclick = (e) => deleteCustomTagColor(color, e);
+                    div.appendChild(deleteBtn);
+
+                    div.addEventListener('click', function (e) {
+                        if (e.target.classList.contains('delete-color-btn')) return;
+
                         selectedTagColor = this.getAttribute('data-color');
                         document.querySelectorAll('.tag-color-option').forEach(o => o.classList.remove('selected'));
                         this.classList.add('selected');
@@ -2829,16 +2888,22 @@
         }
 
         function handleTabDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
+            if (draggedTab || e.dataTransfer.types.includes('application/notemode-note')) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
             }
-            e.dataTransfer.dropEffect = 'move';
             return false;
         }
 
         function handleTabDragEnter(e, tabId) {
-            if (draggedTab !== tabId) {
-                e.target.closest('.tab')?.classList.add('drag-over');
+            const isNote = e.dataTransfer.types.includes('application/notemode-note');
+            const isTab = !!draggedTab;
+            const tabEl = e.target.closest('.tab');
+
+            if (tabEl && ((isTab && draggedTab !== tabId) || (isNote && data.activeTabId !== tabId))) {
+                tabEl.classList.add('drag-over');
             }
         }
 
@@ -2851,7 +2916,31 @@
                 e.stopPropagation();
             }
 
-            if (draggedTab !== targetTabId) {
+            document.querySelectorAll('.tab.drag-over').forEach(t => t.classList.remove('drag-over'));
+
+            const noteId = e.dataTransfer.getData('application/notemode-note');
+            const sourceTabIdForNote = data.activeTabId;
+
+            if (noteId && sourceTabIdForNote !== targetTabId) {
+                e.preventDefault();
+                const sourceTab = data.tabs.find(t => t.id === sourceTabIdForNote);
+                const targetTab = data.tabs.find(t => t.id === targetTabId);
+
+                if (sourceTab && targetTab) {
+                    const noteIndex = sourceTab.notes.findIndex(n => n.id === noteId);
+                    if (noteIndex > -1) {
+                        const [movedNote] = sourceTab.notes.splice(noteIndex, 1);
+                        movedNote.updated = new Date().toISOString();
+                        targetTab.notes.unshift(movedNote);
+                        saveData();
+                        renderNotes(); 
+                    }
+                }
+                return false;
+            }
+
+            if (draggedTab && draggedTab !== targetTabId) {
+                e.preventDefault();
                 const draggedIndex = data.tabs.findIndex(t => t.id === draggedTab);
                 const targetIndex = data.tabs.findIndex(t => t.id === targetTabId);
 
@@ -3253,6 +3342,7 @@
             noteDragSourceId = noteId;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', noteId);
+            e.dataTransfer.setData('application/notemode-note', noteId);
             
             const card = e.target.closest('.note-card');
             e.dataTransfer.setDragImage(card, 0, 0);
@@ -3879,11 +3969,9 @@ function searchByTag(tagName) {
             URL.revokeObjectURL(url);
         }
 
-        // Обработка градиентов
         document.getElementById('bgGradientType').addEventListener('change', updateGradientControls);
         document.getElementById('cardGradientType').addEventListener('change', updateGradientControls);
 
-        // Горячие клавиши
         document.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                 e.preventDefault();
@@ -3898,7 +3986,6 @@ function searchByTag(tagName) {
                 closeSettings();
             }
 
-            // Форматирование в редакторе
             const editor = document.getElementById('noteContent');
             if (editor && document.activeElement === editor) {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
